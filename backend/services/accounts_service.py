@@ -52,6 +52,7 @@ COLUMN_ALIASES: dict[str, list[str]] = {
     "start_date": ["เริ่มทำงาน", "วันที่เริ่มทำงาน"],
     "status": ["สถานะ"],
     "current_salary": ["เงินเดือน ณ สิ้นปีปัจจุบัน", "เงินเดือน", "อัตราค่าแรง"],
+    "prior_liability": ["ผลประโยชน์ของพนักงานที่คาดว่าต้องจ่าย ณ วันสิ้นปีปัจจุบัน"],
 }
 
 MASTER_REQUIRED_FIELDS = [
@@ -65,6 +66,7 @@ MASTER_REQUIRED_FIELDS = [
 
 OUTPUT_COLUMNS = [
     "ลำดับ",
+    "รหัสพนักงาน",
     "คำนำหน้า",
     "ชื่อ",
     "นามสกุล",
@@ -91,9 +93,9 @@ OUTPUT_COLUMNS = [
 ]
 
 # No formula exists anywhere in the reference workbook for these columns —
-# they stay blank in the output (research.md #9, FR-022).
+# they stay blank in the output (research.md #9, FR-022). ยอดยกมา is excluded:
+# it's conditionally populated by carry-forward (specs/002), not unformulated.
 BENEFIT_UNFORMULATED_COLUMNS = [
-    "ยอดยกมา",
     "ต้นทุน",
     "คชจ.บริหาร",
     "คชจ.ขาย",
@@ -145,6 +147,70 @@ def resolve_columns(df: pd.DataFrame) -> dict[str, str | None]:
     for logical_field, aliases in COLUMN_ALIASES.items():
         resolved[logical_field] = next((a for a in aliases if a in columns), None)
     return resolved
+
+
+def _normalize_employee_id(value) -> str | None:
+    """Converges numeric (`1002.0`) and text (`" 1002 "`) representations of
+    the same employee ID to one canonical string (research.md #1, FR-009)."""
+    if pd.isna(value):
+        return None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if float(value).is_integer():
+            return str(int(value))
+        return str(value)
+    text = str(value).strip()
+    return text or None
+
+
+def compute_carry_forward(
+    previous_content: bytes | None, previous_filename: str | None
+) -> tuple[dict[str, float], list[dict]]:
+    """Reads the optional previous-year benefits file and builds a
+    normalized-employee-ID -> prior-liability lookup. Returns ({}, []) when
+    no file is supplied. An ID duplicated within the file is excluded from
+    the lookup and reported as one `duplicateEmployeeId` exception per ID.
+    """
+    if previous_content is None:
+        return {}, []
+
+    previous_df = read_table(previous_content, previous_filename or "previous.xlsx")
+    if previous_df is None:
+        raise BenefitsRequestError("Previous benefits file is empty or unreadable.")
+
+    cols = resolve_columns(previous_df)
+    missing = [f for f in ("id", "prior_liability") if cols.get(f) is None]
+    if missing:
+        raise BenefitsRequestError(f"Previous benefits file missing required columns: {', '.join(missing)}")
+
+    normalized_ids = previous_df[cols["id"]].apply(_normalize_employee_id)
+    liabilities = pd.to_numeric(previous_df[cols["prior_liability"]], errors="coerce")
+
+    counts: dict[str, int] = {}
+    for employee_id in normalized_ids:
+        if employee_id is None:
+            continue
+        counts[employee_id] = counts.get(employee_id, 0) + 1
+
+    lookup: dict[str, float] = {}
+    exceptions: list[dict] = []
+    reported_duplicates: set[str] = set()
+    for employee_id, liability in zip(normalized_ids, liabilities):
+        if employee_id is None:
+            continue
+        if counts[employee_id] > 1:
+            if employee_id not in reported_duplicates:
+                reported_duplicates.add(employee_id)
+                exceptions.append(
+                    {
+                        "category": "duplicateEmployeeId",
+                        "employee_id": employee_id,
+                        "employee_name": None,
+                        "detail": f"Employee ID {employee_id} appears more than once in the previous benefits file — ยอดยกมา left blank.",
+                    }
+                )
+            continue
+        lookup[employee_id] = liability
+    return lookup, exceptions
 
 
 def build_exception_report(exceptions: list[dict]) -> bytes:
@@ -207,11 +273,21 @@ def _datedif_years(start: pd.Series, end: pd.Series) -> pd.Series:
 # --- Pipeline ------------------------------------------------------------
 
 
-def compute_benefit_rows(master_content: bytes, master_filename: str) -> tuple[list[dict], list[dict], date]:
+def compute_benefit_rows(
+    master_content: bytes,
+    master_filename: str,
+    carry_forward_lookup: dict[str, float] | None = None,
+) -> tuple[list[dict], list[dict], date]:
     """Reads the employee master file and computes one output row per
     employee who has reached the eligibility age and has all required
     fields populated. Returns (output_rows, exceptions, year_end_date).
+
+    `carry_forward_lookup` (normalized employee ID -> prior-year liability,
+    specs/002-previous-benefit-carryforward) sets each output row's
+    `ยอดยกมา`; defaults to no-op (every row's value stays blank).
     """
+    carry_forward_lookup = carry_forward_lookup or {}
+
     master_df = read_table(master_content, master_filename)
     if master_df is None:
         raise BenefitsRequestError("Employee master file is empty or unreadable.")
@@ -230,6 +306,7 @@ def compute_benefit_rows(master_content: bytes, master_filename: str) -> tuple[l
             "start_date": pd.to_datetime(master_df[cols["start_date"]], errors="coerce"),
             "current_salary": pd.to_numeric(master_df[cols["current_salary"]], errors="coerce"),
             "status_raw": master_df[cols["status"]] if cols.get("status") else None,
+            "employee_id": master_df[cols["id"]].apply(_normalize_employee_id) if cols.get("id") else None,
         }
     )
     df = df[df["first_name"].str.len() > 0].reset_index(drop=True)
@@ -294,23 +371,25 @@ def compute_benefit_rows(master_content: bytes, master_filename: str) -> tuple[l
         record.update(
             {
                 "ลำดับ": i + 1,
+                "รหัสพนักงาน": row["employee_id"],
                 "คำนำหน้า": row["prefix"],
                 "ชื่อ": row["first_name"],
                 "นามสกุล": row["last_name"],
                 "วันเดือนปีเกิด": row["date_of_birth"].date(),
                 "วันที่เริ่มทำงาน": row["start_date"].date(),
-                "เงินเดือน ณ สิ้นปีปัจจุบัน": row["current_salary"],
+                "เงินเดือน ณ สิ้นปีปัจจุบัน": row["current_salary"] if bool(row["is_resigned"]) else 0,
                 "วันที่เกษียณ (อายุครบ 60)": row["retirement_date"].date(),
                 "อายุปัจจุบัน": int(row["current_age"]),
                 "อายุงานถึงปีเกษียณ": int(row["years_to_retirement"]),
                 "อายุงานถึงปีปัจจุบัน": int(row["years_to_present"]),
                 "อายุงานคงเหลือ": int(row["years_remaining"]),
-                "เงินเดือน ณ วันเกษียณ": row["salary_at_retirement"],
-                "ผลประโยชน์ของพนักงานที่ต้องจ่าย ณ วันเกษียณ": row["severance_at_retirement"],
+                "เงินเดือน ณ วันเกษียณ": row["salary_at_retirement"] if bool(row["is_resigned"]) else 0,
+                "ผลประโยชน์ของพนักงานที่ต้องจ่าย ณ วันเกษียณ": row["severance_at_retirement"] if bool(row["is_resigned"]) else None,
                 "ความน่าจะเป็นในการอยู่จนถึงวันเกษียณ": row["survival_probability"],
-                "ประมาณการหนี้สินผลประโยชน์พนักงานที่คาดว่าจะต้องจ่าย ณ วันเกษียณ": row["liability_at_retirement"],
-                "ผลประโยชน์ของพนักงานที่คาดว่าต้องจ่าย ณ วันสิ้นปีปัจจุบัน": row["liability_at_year_end"],
-                "ลาออก": bool(row["is_resigned"]),
+                "ประมาณการหนี้สินผลประโยชน์พนักงานที่คาดว่าจะต้องจ่าย ณ วันเกษียณ": row["liability_at_retirement"] if bool(row["is_resigned"]) else None,
+                "ผลประโยชน์ของพนักงานที่คาดว่าต้องจ่าย ณ วันสิ้นปีปัจจุบัน": row["liability_at_year_end"] if bool(row["is_resigned"]) else None,
+                "ยอดยกมา": carry_forward_lookup.get(row["employee_id"]),
+                "ลาออก": "ใช่" if bool(row["is_resigned"]) else "ไม่ใช่",
             }
         )
         # BENEFIT_UNFORMULATED_COLUMNS stay None.
@@ -319,19 +398,30 @@ def compute_benefit_rows(master_content: bytes, master_filename: str) -> tuple[l
     return output_rows, exceptions, year_end_date
 
 
-def calculate_benefits(master_content: bytes, master_filename: str) -> dict:
+def calculate_benefits(
+    master_content: bytes,
+    master_filename: str,
+    previous_content: bytes | None = None,
+    previous_filename: str | None = None,
+) -> dict:
     """Orchestrator: computes the benefit rows and assembles the API-facing
-    summary plus the two output files."""
-    output_rows, exceptions, year_end_date = compute_benefit_rows(master_content, master_filename)
+    summary plus the two output files. `previous_content`/`previous_filename`
+    (specs/002-previous-benefit-carryforward) are optional; when supplied,
+    matched employees' `ยอดยกมา` is carried forward from that file."""
+    carry_forward_lookup, carry_forward_exceptions = compute_carry_forward(previous_content, previous_filename)
+    output_rows, exceptions, year_end_date = compute_benefit_rows(
+        master_content, master_filename, carry_forward_lookup
+    )
+    exceptions = exceptions + carry_forward_exceptions
 
-    exceptions_by_category = {"missingRequiredField": 0}
+    exceptions_by_category = {"missingRequiredField": 0, "duplicateEmployeeId": 0}
     for e in exceptions:
         exceptions_by_category[e["category"]] = exceptions_by_category.get(e["category"], 0) + 1
 
     summary = {
         "total_employees_out": len(output_rows),
         "computed_count": len(output_rows),
-        "resigned_flagged_count": sum(1 for r in output_rows if r["ลาออก"]),
+        "resigned_flagged_count": sum(1 for r in output_rows if r["ลาออก"] == "ใช่"),
         "exception_count": len(exceptions),
         "exceptions_by_category": exceptions_by_category,
     }
