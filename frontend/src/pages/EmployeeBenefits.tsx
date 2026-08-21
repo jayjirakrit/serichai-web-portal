@@ -25,13 +25,14 @@ function downloadFileAttachment(attachment: FileAttachment) {
 
 function EmployeeBenefits() {
   const [masterDataFile, setMasterDataFile] = useState<File | null>(null);
+  const [previousBenefitsFile, setPreviousBenefitsFile] = useState<File | null>(null);
 
   const mutation = useMutation<CalculateBenefitsResponse, Error>({
     mutationFn: () => {
       if (!masterDataFile) {
         throw new Error("Please upload the employee master data file.");
       }
-      return calculateBenefits(masterDataFile);
+      return calculateBenefits(masterDataFile, previousBenefitsFile);
     },
   });
 
@@ -58,6 +59,11 @@ function EmployeeBenefits() {
             <fieldset className="fieldset">
               <legend className="fieldset-legend">Employee Master Data</legend>
               <input type="file" className="file-input" onChange={(e) => setMasterDataFile(e.target.files?.[0] || null)} />
+            </fieldset>
+
+            <fieldset className="fieldset">
+              <legend className="fieldset-legend">Previous Employee Benefits</legend>
+              <input type="file" className="file-input" onChange={(e) => setPreviousBenefitsFile(e.target.files?.[0] || null)} />
             </fieldset>
 
             <Button className="w-fit" onClick={onSubmit}>
@@ -104,7 +110,11 @@ function EmployeeBenefits() {
                         {result.exceptions.map((exception, index) => (
                           <li key={index} className="border-b border-gray-200 pb-1">
                             <span className="font-medium">{exception.category}</span>
-                            {exception.employeeName ? ` — ${exception.employeeName}` : ""}
+                            {exception.employeeName
+                              ? ` — ${exception.employeeName}`
+                              : exception.employeeId
+                                ? ` — ${exception.employeeId}`
+                                : ""}
                             <br />
                             <span className="text-neutral-500">{exception.detail}</span>
                           </li>

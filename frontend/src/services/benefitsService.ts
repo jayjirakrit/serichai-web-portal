@@ -1,6 +1,6 @@
 const BACKEND_BASE_URL = "http://127.0.0.1:8000";
 
-export type ExceptionCategory = "missingRequiredField";
+export type ExceptionCategory = "missingRequiredField" | "duplicateEmployeeId";
 
 export interface ExceptionEntry {
   category: ExceptionCategory;
@@ -29,9 +29,15 @@ export interface CalculateBenefitsResponse {
   exceptionReport: FileAttachment;
 }
 
-export async function calculateBenefits(masterFile: File): Promise<CalculateBenefitsResponse> {
+export async function calculateBenefits(
+  masterFile: File,
+  previousBenefitsFile?: File | null,
+): Promise<CalculateBenefitsResponse> {
   const formData = new FormData();
   formData.append("masterFile", masterFile);
+  if (previousBenefitsFile) {
+    formData.append("previousBenefitsFile", previousBenefitsFile);
+  }
 
   const response = await fetch(`${BACKEND_BASE_URL}/accounts/employee-benefits`, {
     method: "POST",
