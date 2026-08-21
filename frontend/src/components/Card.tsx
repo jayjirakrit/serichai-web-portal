@@ -1,16 +1,12 @@
 import { NavLink } from "react-router";
 
-function Card({
-  title,
-  description,
-  image,
-  button,
-}: {
-  title?: string;
-  description?: string;
-  image?: string | SVGSVGElement;
-  button?: React.ReactNode;
-}) {
+type CardProps = {
+  title: string;
+  description: string;
+  link: string;
+};
+
+function Card({ title, description, link }: CardProps) {
   return (
     <>
       <div className="card flex flex-col gap-4 w-68 p-6 border border-gray-300 rounded shadow-xl">
@@ -24,9 +20,9 @@ function Card({
           </svg>
         </div>
 
-        <h5>Employee Benefits</h5>
-        <p>Process employee benefits</p>
-        <NavLink to="/employee-benefits">
+        <h5>{title}</h5>
+        <p>{description}</p>
+        <NavLink to={link}>
           <button className="text-primary flex items-center gap-2 whitespace-nowrap cursor-pointer hover:underline">
             Click Me
             <span>
