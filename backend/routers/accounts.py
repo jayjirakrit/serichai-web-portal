@@ -1,8 +1,10 @@
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 import services.accounts_service as accounts_service
+import services.bonus_service as bonus_service
 import services.payroll_reconcile_service as payroll_reconcile_service
 from models.benefits import CalculateBenefitsResponse
+from models.bonus import CalculateBonusResponse
 from models.payroll import ReconcilePayrollResponse
 
 router = APIRouter(
@@ -49,3 +51,24 @@ async def reconcile_payroll(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return ReconcilePayrollResponse(**result)
+
+
+@router.post("/bonus-calculation", response_model=CalculateBonusResponse)
+async def calculate_bonus(
+    currentYearFile: UploadFile = File(...),
+    previousYearSummaryFile: UploadFile = File(...),
+    year: str = Form(...),
+):
+    current_year_content = await currentYearFile.read()
+    previous_year_summary_content = await previousYearSummaryFile.read()
+
+    try:
+        result = bonus_service.calculate_bonus(
+            current_year_content=current_year_content,
+            previous_year_summary_content=previous_year_summary_content,
+            year=year,
+        )
+    except bonus_service.BonusRequestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return CalculateBonusResponse(**result)
