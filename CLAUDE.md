@@ -86,6 +86,16 @@ Pages currently use plain `useState` for local UI state (e.g. `EmployeeBenefits.
 ## Git commit conventions
 
 - Do **not** add a `Co-Authored-By: Claude` (or any Anthropic/Claude attribution) trailer to commit messages in this repository. Commits should be authored under the user's own identity only.
+- Subject line is tagged `[TAG]` or `[TAG][AREA]`, imperative mood, lowercase after the tag: `[ADD]` (new capability), `[IMP]` (change/enhancement to existing behavior), `[DOCS]` (documentation-only, incl. spec-kit artifacts), each optionally paired with an area tag — `[BE]` (`backend/`), `[FE]` (`frontend/`), `[UI]`, `[DOC]`. Examples: `[ADD][BE] employee benefits calculation API`, `[IMP][FE] add previous benefits file upload for carryforward calculation`.
+- **Spec-kit feature specs**: when committing a new `specs/<NNN-feature-name>/` directory (spec, plan, research, data-model, contracts, quickstart, tasks, checklists), use `[DOCS] add <feature-name> feature spec` as the subject, with a body listing which artifacts are included, e.g.:
+  ```
+  [DOCS] add <feature-name> feature spec
+
+  Adds the spec-kit planning artifacts (spec, plan, research, data
+  model, API contract, quickstart, tasks, checklist) for the <feature>
+  feature (<NNN>).
+  ```
+  Commit only the `specs/<NNN-feature-name>/` directory in that commit — keep spec-doc commits separate from implementation commits (`[ADD]`/`[IMP]`), matching the existing history where each feature's spec lands as its own commit before the `[ADD][BE]`/`[ADD][FE]` implementation commits that follow it.
 
 ## Cross-cutting notes
 
