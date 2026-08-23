@@ -1,13 +1,8 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
+from models.common import CamelModel, FileAttachment
 
 ExceptionCategory = Literal["missingRequiredField", "duplicateEmployeeId"]
-
-
-class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class ExceptionEntry(CamelModel):
@@ -23,11 +18,6 @@ class CalculationSummary(CamelModel):
     resigned_flagged_count: int
     exception_count: int
     exceptions_by_category: dict[str, int]
-
-
-class FileAttachment(CamelModel):
-    filename: str
-    content_base64: str
 
 
 class CalculateBenefitsResponse(CamelModel):
