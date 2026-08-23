@@ -19,6 +19,11 @@ function Home() {
       description: "Calculate your bonus based on performance metrics.",
       link: "/bonus-calculation",
     },
+        {
+      title: "Payroll Reconciliation",
+      description: "Reconcile payroll data with employee records.",
+      link: "/payroll-reconciliation",
+    },
   ];
 
   return (
