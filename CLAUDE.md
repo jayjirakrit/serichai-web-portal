@@ -37,6 +37,21 @@ uvicorn main:app --reload        # run from inside backend/, serves on http://12
 
 No lint config, no test framework, and no formatter config exist in `backend/` yet — don't invent commands for these.
 
+### Containerized (`docker-compose.yml`)
+
+Runs both apps together behind a single published port, for deployment on a private network (no TLS/auth — see `specs/005-docker-deployment/spec.md`):
+
+```
+cp .env.example .env   # first time only; defaults work out of the box
+docker compose up      # serves the whole portal on http://localhost:8080 (or $PORT)
+```
+
+This builds `backend/Dockerfile` and `frontend/Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend — see `frontend/nginx.conf`). The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
+
+### Devcontainer (`.devcontainer/`)
+
+For onboarding: open the repo in a devcontainer-compatible editor to get Node 20 + Python 3.13 with both toolchains' dependencies pre-installed (`postCreateCommand`), then run the same `npm run dev` / `uvicorn --reload` commands above inside it — no local Node/Python install needed.
+
 ## Architecture
 
 ### Backend: router → service layering

@@ -1,4 +1,4 @@
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+import { API_BASE_URL } from "./apiConfig";
 
 export type BonusExceptionCategory =
   | "evaluationNotFound"
@@ -72,7 +72,7 @@ export async function calculateBonus(
   formData.append("previousYearSummaryFile", previousYearSummaryFile);
   formData.append("year", year);
 
-  const response = await fetch(`${BACKEND_BASE_URL}/accounts/bonus-calculation`, {
+  const response = await fetch(`${API_BASE_URL}/accounts/bonus-calculation`, {
     method: "POST",
     body: formData,
   });

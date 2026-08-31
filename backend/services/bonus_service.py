@@ -1,6 +1,7 @@
 import base64
 import copy
 import io
+import os
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +11,8 @@ from openpyxl.utils import get_column_letter
 
 # --- Constants -----------------------------------------------------------
 
-TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "data" / "Bonus_Calculation_Template.xlsx"
+DATA_DIR = Path(os.environ.get("DATA_DIR") or (Path(__file__).resolve().parent.parent / "data"))
+TEMPLATE_PATH = DATA_DIR / "Bonus_Calculation_Template.xlsx"
 
 OFFICE_DEPARTMENT_MARKER = "ออฟฟิศ"
 

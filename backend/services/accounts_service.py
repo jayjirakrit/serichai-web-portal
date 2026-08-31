@@ -1,5 +1,6 @@
 import base64
 import io
+import os
 from datetime import date, datetime
 from pathlib import Path
 
@@ -10,7 +11,8 @@ from openpyxl import Workbook
 
 from util import be_dates
 
-TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "data" / "Employee_Benefit_Template.xlsx"
+DATA_DIR = Path(os.environ.get("DATA_DIR") or (Path(__file__).resolve().parent.parent / "data"))
+TEMPLATE_PATH = DATA_DIR / "Employee_Benefit_Template.xlsx"
 
 RESIGNED_MARKER = "ลาออก"
 ELIGIBILITY_AGE = 35

@@ -1,4 +1,4 @@
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+import { API_BASE_URL } from "./apiConfig";
 
 export type ReconciliationStatus = "discrepancy" | "unrecognizedDepartment" | "dataError";
 
@@ -37,7 +37,7 @@ export async function reconcilePayroll(payrollFile: File, period: string): Promi
   formData.append("payrollFile", payrollFile);
   formData.append("period", period);
 
-  const response = await fetch(`${BACKEND_BASE_URL}/accounts/payroll-reconcile`, {
+  const response = await fetch(`${API_BASE_URL}/accounts/payroll-reconcile`, {
     method: "POST",
     body: formData,
   });

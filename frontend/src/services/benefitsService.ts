@@ -1,4 +1,4 @@
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+import { API_BASE_URL } from "./apiConfig";
 
 export type ExceptionCategory = "missingRequiredField" | "duplicateEmployeeId";
 
@@ -39,7 +39,7 @@ export async function calculateBenefits(
     formData.append("previousBenefitsFile", previousBenefitsFile);
   }
 
-  const response = await fetch(`${BACKEND_BASE_URL}/accounts/employee-benefits`, {
+  const response = await fetch(`${API_BASE_URL}/accounts/employee-benefits`, {
     method: "POST",
     body: formData,
   });

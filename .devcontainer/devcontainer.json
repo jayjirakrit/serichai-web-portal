@@ -1,0 +1,19 @@
+{
+  "name": "Serichai Web Portal",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13"
+    }
+  },
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [5173, 8000],
+  "portsAttributes": {
+    "5173": { "label": "Frontend (npm run dev)" },
+    "8000": { "label": "Backend (uvicorn)" }
+  },
+  "postCreateCommand": "cd frontend && npm install && cd ../backend && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt"
+}
