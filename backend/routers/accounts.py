@@ -1,11 +1,15 @@
+from datetime import date
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 import services.accounts_service as accounts_service
 import services.bonus_service as bonus_service
 import services.payroll_reconcile_service as payroll_reconcile_service
+import services.tax_deduction_service as tax_deduction_service
 from models.benefits import CalculateBenefitsResponse
 from models.bonus import CalculateBonusResponse
 from models.payroll import ReconcilePayrollResponse
+from models.tax_deduction import CalculateTaxDeductionResponse
 
 router = APIRouter(
     prefix="/accounts",
@@ -72,3 +76,21 @@ async def calculate_bonus(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return CalculateBonusResponse(**result)
+
+
+@router.post("/tax-deduction", response_model=CalculateTaxDeductionResponse)
+async def calculate_tax_deduction(
+    payrollFile: UploadFile = File(...),
+    referenceDate: date | None = Form(None),
+):
+    payroll_content = await payrollFile.read()
+
+    try:
+        result = tax_deduction_service.calculate_tax_deduction(
+            payroll_content=payroll_content,
+            reference_date=referenceDate,
+        )
+    except tax_deduction_service.TaxDeductionRequestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return CalculateTaxDeductionResponse(**result)

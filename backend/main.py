@@ -8,6 +8,12 @@ from routers import accounts_router
 app = FastAPI()
 app.include_router(accounts_router)
 
+
+@app.get("/health")
+def health_check() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 CORS_ORIGINS = [
     origin.strip()
     for origin in os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")

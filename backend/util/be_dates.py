@@ -26,3 +26,18 @@ def retirement_date(date_of_birth: DateLike) -> date:
     except ValueError:
         # 29 Feb in a non-leap target year.
         return dob.replace(year=target_year, day=28)
+
+
+def correct_be_year(dob: DateLike, reference_date: DateLike) -> date:
+    """Corrects a Buddhist-Era-mislabeled date of birth (research.md #4,
+    specs/006-elderly-tax-deduction): a BE year is always Gregorian + 543, so
+    a BE-mislabeled birth year is always numerically greater than the
+    reference date's Gregorian year (no one is born in the future) — a safe,
+    maintenance-free discriminator. A genuine Gregorian year is returned
+    unchanged, including the `dob.year == reference_date.year` boundary.
+    """
+    dob = _to_date(dob)
+    reference_date = _to_date(reference_date)
+    if dob.year > reference_date.year:
+        return dob.replace(year=dob.year - 543)
+    return dob
