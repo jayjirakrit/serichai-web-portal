@@ -3,6 +3,7 @@ import Button from "@/components/Button";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { calculateTaxDeduction, type CalculateTaxDeductionResponse, type FileAttachment, type TaxDeductionEmployeeResult } from "@/services/taxDeductionService";
+import taxReductionInputTemplate from "@/assets/Tax_Reduction_Input.xlsx?url";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -139,6 +140,19 @@ function TaxDeduction() {
               )}
             </div>
           </div>
+
+          <div className="emp-bene-content-files flex flex-col gap-2">
+            <h4 className="font-semibold">Instruction</h4>
+            <div className="flex flex-col w-96 h-96 bg-white p-4 border border-gray-300 rounded overflow-y-auto">
+              <ol className="list-decimal list-inside">
+                <li>Prepare employee input file.</li>
+                <li><a href={taxReductionInputTemplate} download="Tax_Reduction_Input.xlsx"><strong>Download</strong></a> the template and fill data.</li>
+                <li>Upload the file.</li>
+                <li>Click Submit.</li>
+              </ol>
+            </div>
+          </div>
+          
         </div>
 
         {result && (
