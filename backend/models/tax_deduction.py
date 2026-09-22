@@ -13,6 +13,7 @@ class TaxDeductionEmployeeResult(CamelModel):
     age: int | None = None
     average_monthly_salary: float | None = None
     eligible: bool
+    disabled: bool = False
     rank: int | None = None
     selected: bool
     monthly_amounts: list[float]

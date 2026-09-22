@@ -120,6 +120,7 @@ def read_input(content: bytes) -> pd.DataFrame:
             "last_name": data[identity_cols["last_name"]].apply(_clean_str),
             "base_wage_rate": pd.to_numeric(data[identity_cols["base_wage_rate"]], errors="coerce"),
             "date_of_birth_raw": pd.to_datetime(data[identity_cols["date_of_birth"]], errors="coerce"),
+            "disabled_marker": data[identity_cols["disabled_marker"]].apply(_clean_str),
         }
     )
 
@@ -167,14 +168,47 @@ def calculate(roster: pd.DataFrame, reference_date: date) -> pd.DataFrame:
     total_populated = monthly_values.sum(axis=1, skipna=True)
     df["average_monthly_net_salary"] = total_populated / populated_count.replace(0, np.nan)
 
-    age_ok = df["age"].notna() & (df["age"] > AGE_THRESHOLD)
-    salary_ok = df["average_monthly_net_salary"].notna() & (df["average_monthly_net_salary"] <= SALARY_CAP)
-    df["eligible"] = age_ok & salary_ok
+    # Age alone determines elderly-employee eligibility — a month's own
+    # wage+OT (not the yearly average) decides whether that specific month
+    # is deductible (below), so a high-OT month elsewhere in the year never
+    # disqualifies an otherwise-eligible employee from every month.
+    elderly_eligible = df["age"].notna() & (df["age"] > AGE_THRESHOLD)
+
+    # Disabled employees (Royal Decree No. 499, B.E. 2559) qualify for the
+    # deduction unconditionally — no age test either — and never consume any
+    # of the 10% headcount cap reserved for the elderly-employee rule.
+    if "disabled_marker" in df.columns:
+        df["disabled"] = df["disabled_marker"].notna()
+    else:
+        df["disabled"] = False
+
+    df["eligible"] = elderly_eligible | df["disabled"]
 
     headcount_cap = math.floor(len(df) * HEADCOUNT_CAP_PERCENT)
 
+    # Only non-disabled, age-eligible employees compete for the
+    # headcount-capped slots; disabled employees are selected outright below.
+    capped_pool = elderly_eligible & ~df["disabled"]
+
+    # Each month's potential deductible amount (capped at SALARY_CAP for
+    # non-disabled employees, uncapped for disabled ones) is computed before
+    # selection, so ranking can be based on what an employee would actually
+    # receive rather than their raw average salary — otherwise a high-earner
+    # who is over cap every month (and so would receive ฿0 regardless) could
+    # outrank and displace a genuinely deductible employee for a scarce slot.
+    potential_amounts = {}
+    for m in range(1, 13):
+        net = df[f"monthly_net_{m}"]
+        capped_amount = net.where(net <= SALARY_CAP, 0.0).fillna(0.0)
+        uncapped_amount = net.fillna(0.0)
+        potential_amounts[m] = np.where(df["disabled"], uncapped_amount, capped_amount)
+    df["_potential_total_deduction"] = sum(potential_amounts.values())
+
     df["rank"] = np.nan
-    eligible_df = df[df["eligible"]].sort_values(by=["average_monthly_net_salary", "seq"], ascending=[False, True])
+    eligible_df = df[capped_pool].sort_values(
+        by=["_potential_total_deduction", "seq"], ascending=[False, True]
+    )
+    df = df.drop(columns=["_potential_total_deduction"])
     if not eligible_df.empty:
         df.loc[eligible_df.index, "rank"] = range(1, len(eligible_df) + 1)
 
@@ -182,11 +216,10 @@ def calculate(roster: pd.DataFrame, reference_date: date) -> pd.DataFrame:
     if headcount_cap > 0 and not eligible_df.empty:
         selected_index = df.loc[df["rank"].notna() & (df["rank"] <= headcount_cap)].index
         df.loc[selected_index, "selected"] = True
+    df.loc[df["disabled"], "selected"] = True
 
     for m in range(1, 13):
-        net = df[f"monthly_net_{m}"]
-        amount = net.where(net <= SALARY_CAP, 0.0).fillna(0.0)
-        df[f"monthly_deduction_{m}"] = np.where(df["selected"], amount, 0.0)
+        df[f"monthly_deduction_{m}"] = np.where(df["selected"], potential_amounts[m], 0.0)
 
     deduction_cols = [f"monthly_deduction_{m}" for m in range(1, 13)]
     df["total_deduction"] = df[deduction_cols].sum(axis=1)
@@ -266,6 +299,7 @@ def _employee_result(row: pd.Series) -> dict:
         "age": _int_or_none(row.get("age")),
         "average_monthly_salary": _num_or_none(row.get("average_monthly_net_salary")),
         "eligible": bool(row["eligible"]),
+        "disabled": bool(row.get("disabled", False)),
         "rank": _int_or_none(row.get("rank")),
         "selected": bool(row["selected"]),
         "monthly_amounts": [float(row[f"monthly_deduction_{m}"]) for m in range(1, 13)],
