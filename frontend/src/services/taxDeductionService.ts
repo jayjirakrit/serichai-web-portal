@@ -10,6 +10,7 @@ export interface TaxDeductionEmployeeResult {
   age: number | null;
   averageMonthlySalary: number | null;
   eligible: boolean;
+  disabled: boolean;
   rank: number | null;
   selected: boolean;
   monthlyAmounts: number[];

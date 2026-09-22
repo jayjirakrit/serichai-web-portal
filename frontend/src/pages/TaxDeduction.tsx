@@ -14,6 +14,9 @@ function getEmployeeStatus(employee: TaxDeductionEmployeeResult): { label: strin
   if (!employee.selected) {
     return { label: "Eligible, not selected", badgeClass: "badge-warning" };
   }
+  if (employee.disabled) {
+    return { label: "Selected (disabled, uncapped)", badgeClass: "badge-success" };
+  }
   return { label: "Selected", badgeClass: "badge-success" };
 }
 
