@@ -8,11 +8,13 @@ Per FR-012, every constant below is defined exactly once in `tax_deduction_servi
 
 | Constant | Value | Used for |
 |---|---|---|
-| `AGE_THRESHOLD` | `60` | Eligibility gate: `age > AGE_THRESHOLD` (FR-004 — strictly over, never `>=`). |
-| `SALARY_CAP` | `15000.0` (THB) | Both the eligibility salary ceiling (FR-004: `average_salary <= SALARY_CAP`) and the per-employee-per-month deduction cap (FR-006). One constant serves both, since spec.md defines them as the same figure. |
-| `HEADCOUNT_CAP_PERCENT` | `0.10` | Selection cap: `floor(total_roster_rows * HEADCOUNT_CAP_PERCENT)` (FR-005). |
+| `AGE_THRESHOLD` | `60` | Elderly-employee eligibility gate: `age > AGE_THRESHOLD` (FR-004(a) — strictly over, never `>=`; no salary condition). |
+| `SALARY_CAP` | `15000.0` (THB) | The per-employee-per-month deduction cap (FR-006) for non-disabled selected employees only. No longer an eligibility condition (revised: eligibility is age-only per FR-004(a), or unconditional for disabled employees per FR-004(b)) — see FR-006a for the disabled-employee exception (uncapped). |
+| `HEADCOUNT_CAP_PERCENT` | `0.10` | Selection cap: `floor(total_roster_rows * HEADCOUNT_CAP_PERCENT)` (FR-005), applied only to the non-disabled, age-eligible ranked pool. |
 | `HEADCOUNT_CAP_ROUNDING` | `"floor"` | Documents the rounding rule FR-012 requires be inspectable; implemented as `math.floor`. |
 | `BE_YEAR_OFFSET` | `543` | Buddhist-Era DOB correction (`research.md` #4). |
+
+A disabled employee's eligibility, cap-exemption, and uncapped monthly amount (FR-004(b), FR-006a) are not tunable constants — they are unconditional rules keyed off the roster's `คนพิการ` (disabled-marker) column, not a numeric threshold.
 
 ## RosterEmployee (working `DataFrame` — one row per `ข้อมูลพนักงาน` data row)
 
@@ -26,6 +28,7 @@ Read per `research.md` #2: first 8 columns resolved by header name; the 12 month
 | base_wage_rate | float | `อัตราค่าแรง` — read but not itself part of the deduction calculation (informational). |
 | date_of_birth_raw | date | `วันเดือนปีเกิด`, as stored (possibly BE-mislabeled). |
 | date_of_birth | date | `date_of_birth_raw` corrected via `correct_be_year()` (`research.md` #4). |
+| disabled_marker | str \| None | `คนพิการ`, as stored (cleaned text or `None` if blank). |
 | monthly_net[1..12] | float \| NaN | One column per calendar month, `NaN` when that month is unpopulated (`research.md` #2/#5). Months 1–2,4–11: read directly from that block's `รวม`. Months 3, 12: computed as `wage + OT.fillna(0)`, ignoring `รวม` and `โบนัส` entirely. |
 
 ## EmployeeCalculationResult (working `DataFrame` — derived columns, every roster row)
@@ -35,11 +38,15 @@ Computed per `research.md` #10 — for every row, not only age-qualifying ones.
 | Column | Type | Notes |
 |---|---|---|
 | age | int \| None | Years from `date_of_birth` to `reference_date` (whole completed years); `None` if `date_of_birth` couldn't be parsed. |
-| average_monthly_net_salary | float \| None | `sum(monthly_net over populated months) / count(populated months)`; `None` if zero populated months or `age` is `None`. |
-| eligible | bool | `(age is not None) & (age > AGE_THRESHOLD) & (average_monthly_net_salary is not None) & (average_monthly_net_salary <= SALARY_CAP)`. |
-| rank | int \| None | 1-based rank among `eligible` rows only, sorted by `average_monthly_net_salary` descending, ties broken by ascending `seq`; `None` for non-eligible rows. |
-| selected | bool | `True` for the top `headcount_cap` eligible rows by `rank`; `False` otherwise (including all non-eligible rows). |
-| monthly_deduction[1..12] | float | For a `selected` row: `monthly_net[m]` for each populated month `m` where `monthly_net[m] <= SALARY_CAP`; `0` when that month is unpopulated **or** `monthly_net[m] > SALARY_CAP` (an over-cap month zeroes, it does not clamp to `SALARY_CAP` — FR-006). For a non-`selected` row (eligible-but-excluded or not-eligible): all 12 are `0` (FR-007). |
+| average_monthly_net_salary | float \| None | `sum(monthly_net over populated months) / count(populated months)`; `None` if zero populated months or `age` is `None`. Informational/reported only — does not gate `eligible` or drive `rank` (revised; see below). |
+| disabled | bool | `disabled_marker is not None` (any non-blank value in `คนพิการ` counts). |
+| elderly_eligible (internal, age-only) | bool | `(age is not None) & (age > AGE_THRESHOLD)` — no salary condition (FR-004(a), revised). |
+| eligible | bool | `elderly_eligible \| disabled` (FR-004). |
+| capped_pool (internal) | bool | `elderly_eligible & ~disabled` — the set that actually competes for the headcount-capped slots (FR-005). |
+| potential_deduction[1..12] (internal) | float | For `disabled` rows: `monthly_net[m]` uncapped (`0` if unpopulated). For non-`disabled` rows: `monthly_net[m]` when `<= SALARY_CAP`, else `0` (FR-006/FR-006a) — computed for every row regardless of `selected`, so ranking (below) reflects what the employee would actually receive. |
+| rank | int \| None | 1-based rank among `capped_pool` rows only, sorted by `sum(potential_deduction[1..12])` descending, ties broken by ascending `seq` (FR-005, revised — no longer sorted by `average_monthly_net_salary`); `None` for `disabled` and non-eligible rows. |
+| selected | bool | `True` for the top `headcount_cap` `capped_pool` rows by `rank`, **or** any `disabled` row (unconditional, FR-006a); `False` otherwise (including all non-eligible rows). |
+| monthly_deduction[1..12] | float | `potential_deduction[m]` for a `selected` row; `0` for a non-`selected` row (eligible-but-excluded or not-eligible, FR-007). |
 | total_deduction | float | `sum(monthly_deduction[1..12])`. |
 
 ## CalculationRun (per-request aggregate, not persisted)
@@ -67,6 +74,7 @@ One endpoint, one response envelope — `summary` + `employees` + an embedded re
 | age | int \| None | age |
 | averageMonthlySalary | float \| None | average_monthly_net_salary |
 | eligible | bool | eligible |
+| disabled | bool | disabled |
 | rank | int \| None | rank |
 | selected | bool | selected |
 | monthlyAmounts | list[float] (len 12, Jan→Dec) | monthly_deduction[1..12] |
