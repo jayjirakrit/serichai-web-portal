@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
-import { Navbar } from './core/layout/navbar';
+import { Navbar } from './shared/ui/navbar';
 
 describe('app routes', () => {
   beforeEach(() => {

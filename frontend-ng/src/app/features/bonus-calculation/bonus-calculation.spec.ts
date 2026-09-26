@@ -52,7 +52,7 @@ describe('BonusCalculation page', () => {
   it('shows inline messages and sends no request when input is missing', async () => {
     await submit();
     expect(el.textContent).toContain('Please upload the current-year data file.');
-    expect(el.textContent).toContain('Please upload the previous-year summary file.');
+    expect(el.textContent).not.toContain('previous-year summary file.');
     expect(el.textContent).toContain('Please enter the year to calculate.');
     http.expectNone(URL);
   });

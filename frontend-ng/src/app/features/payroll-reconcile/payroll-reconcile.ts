@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { apiCall } from '../../core/http/api-call';
-import { Layout } from '../../core/layout/layout';
+import { Layout } from '../../shared/ui/layout';
 import { Button } from '../../shared/ui/button';
 import { FileField } from '../../shared/ui/file-field';
 import { ResultPanel } from '../../shared/ui/result-panel';
