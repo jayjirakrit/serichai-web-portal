@@ -48,6 +48,10 @@ docker compose up      # serves the whole portal on http://localhost:8080 (or $P
 
 This builds `backend/Dockerfile` and `frontend/Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend — see `frontend/nginx.conf`). The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
 
+### Windows native install (`scripts/windows/`)
+
+For a Windows machine that should run the portal permanently without Docker: `setup.ps1` (winget installs Python/Node, venv + `pip install`, `npm ci` + build, registers a boot-time Scheduled Task), `open-firewall.ps1` (LAN access), `set-static-ip.ps1` (optional). The task runs `uvicorn` on `0.0.0.0:8080` with `FRONTEND_DIST` set, so `backend/main.py` serves the built Angular bundle (SPA fallback) plus `/accounts/*` from one origin — the same shape as the nginx gateway. `FRONTEND_DIST` is unset in dev and Docker, so this path is inactive there. See `scripts/windows/README.md`.
+
 ### Devcontainer (`.devcontainer/`)
 
 For onboarding: open the repo in a devcontainer-compatible editor to get Node 20 + Python 3.13 with both toolchains' dependencies pre-installed (`postCreateCommand`), then run the same `npm run dev` / `uvicorn --reload` commands above inside it — no local Node/Python install needed.
