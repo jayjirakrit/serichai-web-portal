@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Layout } from './layout';
+import { Layout } from '@shared/ui/layout';
 
 @Component({ imports: [Layout], template: '<app-layout><p class="page">hi</p></app-layout>' })
 class Host {}

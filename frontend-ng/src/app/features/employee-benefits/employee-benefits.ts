@@ -1,12 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { apiCall } from '../../core/http/api-call';
-import { Layout } from '../../shared/ui/layout';
-import { FileAttachment } from '../../shared/models/attachment';
-import { Button } from '../../shared/ui/button';
-import { FileField } from '../../shared/ui/file-field';
-import { ResultPanel } from '../../shared/ui/result-panel';
-import { downloadAttachment } from '../../shared/utils/download';
-import { BenefitsService } from './employee-benefits.service';
+import { apiCall } from '@core/http/api-call';
+import { Layout } from '@shared/ui/layout';
+import { FileAttachment } from '@shared/models/attachment';
+import { Button } from '@shared/ui/button';
+import { FileField } from '@shared/ui/file-field';
+import { ResultPanel } from '@shared/ui/result-panel';
+import { downloadAttachment } from '@shared/utils/download';
+import { BenefitsService } from '@/features/employee-benefits/employee-benefits.service';
 
 @Component({
   selector: 'app-employee-benefits',

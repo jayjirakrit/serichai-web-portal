@@ -2,8 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { EmployeeBenefits } from './employee-benefits';
+import { API_BASE_URL } from '@core/config/api-config';
+import { EmployeeBenefits } from '@/features/employee-benefits/employee-benefits';
 
 describe('EmployeeBenefits page', () => {
   async function setup() {

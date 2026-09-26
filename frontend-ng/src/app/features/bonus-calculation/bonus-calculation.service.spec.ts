@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { BonusCalculationService } from './bonus-calculation.service';
+import { API_BASE_URL } from '@core/config/api-config';
+import { BonusCalculationService } from '@/features/bonus-calculation/bonus-calculation.service';
 
 describe('BonusCalculationService', () => {
   it('POSTs multipart form with exact field names', () => {

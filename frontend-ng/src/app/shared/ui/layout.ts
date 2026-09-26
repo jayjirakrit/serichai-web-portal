@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Navbar } from './navbar';
+import { Navbar } from '@shared/ui/navbar';
 
 /** Page shell: navbar + projected page content. Pages wrap their template in <app-layout>. */
 @Component({

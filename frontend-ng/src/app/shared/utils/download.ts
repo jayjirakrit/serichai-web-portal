@@ -1,4 +1,4 @@
-import { FileAttachment } from '../models/attachment';
+import { FileAttachment } from '@shared/models/attachment';
 
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 

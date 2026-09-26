@@ -2,8 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { BonusCalculation } from './bonus-calculation';
+import { API_BASE_URL } from '@core/config/api-config';
+import { BonusCalculation } from '@/features/bonus-calculation/bonus-calculation';
 
 describe('BonusCalculation page', () => {
   let fixture: ComponentFixture<BonusCalculation>;

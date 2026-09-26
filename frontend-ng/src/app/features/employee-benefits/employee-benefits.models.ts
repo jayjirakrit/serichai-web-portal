@@ -1,4 +1,4 @@
-import { FileAttachment } from '../../shared/models/attachment';
+import { FileAttachment } from '@shared/models/attachment';
 
 export type ExceptionCategory = 'missingRequiredField' | 'duplicateEmployeeId';
 

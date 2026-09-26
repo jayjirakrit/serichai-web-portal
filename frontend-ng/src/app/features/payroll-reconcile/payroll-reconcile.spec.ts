@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { PayrollReconcile } from './payroll-reconcile';
+import { API_BASE_URL } from '@core/config/api-config';
+import { PayrollReconcile } from '@/features/payroll-reconcile/payroll-reconcile';
 
 describe('PayrollReconcile page', () => {
   async function setup() {

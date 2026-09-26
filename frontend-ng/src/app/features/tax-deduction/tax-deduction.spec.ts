@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { TaxDeduction } from './tax-deduction';
-import { CalculateTaxDeductionResponse } from './tax-deduction.models';
+import { API_BASE_URL } from '@core/config/api-config';
+import { TaxDeduction } from '@/features/tax-deduction/tax-deduction';
+import { CalculateTaxDeductionResponse } from '@/features/tax-deduction/tax-deduction.models';
 
 const URL = 'http://api/accounts/tax-deduction';
 

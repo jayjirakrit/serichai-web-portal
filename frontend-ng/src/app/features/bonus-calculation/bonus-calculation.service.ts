@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { CalculateBonusResponse } from './bonus-calculation.models';
+import { API_BASE_URL } from '@core/config/api-config';
+import { CalculateBonusResponse } from '@/features/bonus-calculation/bonus-calculation.models';
 
 @Injectable({ providedIn: 'root' })
 export class BonusCalculationService {

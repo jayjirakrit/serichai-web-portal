@@ -1,4 +1,4 @@
-import { XLSX_MIME, downloadAttachment } from './download';
+import { XLSX_MIME, downloadAttachment } from '@shared/utils/download';
 
 describe('downloadAttachment', () => {
   afterEach(() => vi.restoreAllMocks());

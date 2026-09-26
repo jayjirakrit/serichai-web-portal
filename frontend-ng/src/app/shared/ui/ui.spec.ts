@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Button } from './button';
-import { Card } from './card';
-import { FileField } from './file-field';
-import { ResultPanel, ResultPanelStatus } from './result-panel';
+import { Button } from '@shared/ui/button';
+import { Card } from '@shared/ui/card';
+import { FileField } from '@shared/ui/file-field';
+import { ResultPanel, ResultPanelStatus } from '@shared/ui/result-panel';
 
 @Component({
   imports: [Button, Card, FileField, ResultPanel],

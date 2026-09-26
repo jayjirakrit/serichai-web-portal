@@ -2,7 +2,7 @@ import { Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject } from 'rxjs';
-import { apiCall } from './api-call';
+import { apiCall } from '@core/http/api-call';
 
 function setup() {
   const subject = new Subject<string>();

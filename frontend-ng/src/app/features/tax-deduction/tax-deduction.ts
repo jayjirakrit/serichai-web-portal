@@ -1,13 +1,13 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { apiCall } from '../../core/http/api-call';
-import { Layout } from '../../shared/ui/layout';
-import { Button } from '../../shared/ui/button';
-import { FileField } from '../../shared/ui/file-field';
-import { ResultPanel } from '../../shared/ui/result-panel';
-import { downloadAttachment } from '../../shared/utils/download';
-import { TaxDeductionService } from './tax-deduction.service';
-import { TaxDeductionEmployeeResult } from './tax-deduction.models';
+import { apiCall } from '@core/http/api-call';
+import { Layout } from '@shared/ui/layout';
+import { Button } from '@shared/ui/button';
+import { FileField } from '@shared/ui/file-field';
+import { ResultPanel } from '@shared/ui/result-panel';
+import { downloadAttachment } from '@shared/utils/download';
+import { TaxDeductionService } from '@/features/tax-deduction/tax-deduction.service';
+import { TaxDeductionEmployeeResult } from '@/features/tax-deduction/tax-deduction.models';
 
 @Component({
   selector: 'app-tax-deduction',

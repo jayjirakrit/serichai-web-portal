@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { Layout } from '../../shared/ui/layout';
-import { Card } from '../../shared/ui/card';
+import { Layout } from '@shared/ui/layout';
+import { Card } from '@shared/ui/card';
 
 interface Feature {
   title: string;

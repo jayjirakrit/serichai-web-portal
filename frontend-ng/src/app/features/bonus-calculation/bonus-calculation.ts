@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { apiCall } from '../../core/http/api-call';
-import { Layout } from '../../shared/ui/layout';
-import { Button } from '../../shared/ui/button';
-import { FileField } from '../../shared/ui/file-field';
-import { ResultPanel } from '../../shared/ui/result-panel';
-import { downloadAttachment } from '../../shared/utils/download';
-import { BonusCalculationService } from './bonus-calculation.service';
+import { apiCall } from '@core/http/api-call';
+import { Layout } from '@shared/ui/layout';
+import { Button } from '@shared/ui/button';
+import { FileField } from '@shared/ui/file-field';
+import { ResultPanel } from '@shared/ui/result-panel';
+import { downloadAttachment } from '@shared/utils/download';
+import { BonusCalculationService } from '@/features/bonus-calculation/bonus-calculation.service';
 
 @Component({
   selector: 'app-bonus-calculation',

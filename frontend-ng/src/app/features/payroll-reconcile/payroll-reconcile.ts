@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { apiCall } from '../../core/http/api-call';
-import { Layout } from '../../shared/ui/layout';
-import { Button } from '../../shared/ui/button';
-import { FileField } from '../../shared/ui/file-field';
-import { ResultPanel } from '../../shared/ui/result-panel';
-import { downloadAttachment } from '../../shared/utils/download';
-import { PayrollReconcileService } from './payroll-reconcile.service';
+import { apiCall } from '@core/http/api-call';
+import { Layout } from '@shared/ui/layout';
+import { Button } from '@shared/ui/button';
+import { FileField } from '@shared/ui/file-field';
+import { ResultPanel } from '@shared/ui/result-panel';
+import { downloadAttachment } from '@shared/utils/download';
+import { PayrollReconcileService } from '@/features/payroll-reconcile/payroll-reconcile.service';
 
 @Component({
   selector: 'app-payroll-reconcile',

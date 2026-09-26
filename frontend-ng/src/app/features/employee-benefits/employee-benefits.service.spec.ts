@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { BenefitsService } from './employee-benefits.service';
+import { API_BASE_URL } from '@core/config/api-config';
+import { BenefitsService } from '@/features/employee-benefits/employee-benefits.service';
 
 describe('BenefitsService', () => {
   let service: BenefitsService;

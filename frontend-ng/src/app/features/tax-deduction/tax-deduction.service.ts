@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { CalculateTaxDeductionResponse } from './tax-deduction.models';
+import { API_BASE_URL } from '@core/config/api-config';
+import { CalculateTaxDeductionResponse } from '@/features/tax-deduction/tax-deduction.models';
 
 @Injectable({ providedIn: 'root' })
 export class TaxDeductionService {

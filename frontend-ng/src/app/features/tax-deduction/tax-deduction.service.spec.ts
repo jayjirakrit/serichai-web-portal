@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { TaxDeductionService } from './tax-deduction.service';
+import { API_BASE_URL } from '@core/config/api-config';
+import { TaxDeductionService } from '@/features/tax-deduction/tax-deduction.service';
 
 describe('TaxDeductionService', () => {
   it('POSTs only payrollFile as multipart', () => {

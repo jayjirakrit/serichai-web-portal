@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { ReconcilePayrollResponse } from './payroll-reconcile.models';
+import { API_BASE_URL } from '@core/config/api-config';
+import { ReconcilePayrollResponse } from '@/features/payroll-reconcile/payroll-reconcile.models';
 
 @Injectable({ providedIn: 'root' })
 export class PayrollReconcileService {

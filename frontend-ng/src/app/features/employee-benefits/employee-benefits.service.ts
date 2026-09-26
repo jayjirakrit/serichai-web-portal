@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { CalculateBenefitsResponse } from './employee-benefits.models';
+import { API_BASE_URL } from '@core/config/api-config';
+import { CalculateBenefitsResponse } from '@/features/employee-benefits/employee-benefits.models';
 
 @Injectable({ providedIn: 'root' })
 export class BenefitsService {

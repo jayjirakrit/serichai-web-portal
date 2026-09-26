@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { API_BASE_URL } from '../../core/config/api-config';
-import { PayrollReconcileService } from './payroll-reconcile.service';
+import { API_BASE_URL } from '@core/config/api-config';
+import { PayrollReconcileService } from '@/features/payroll-reconcile/payroll-reconcile.service';
 
 describe('PayrollReconcileService', () => {
   it('posts multipart payrollFile and period to the endpoint', () => {
