@@ -73,14 +73,13 @@ frontend-ng/
       core/                     # app-wide singletons; imported only by app.config / app shell
         config/api-config.ts        (InjectionToken API_BASE_URL)
         http/api-call.ts            (signal mutation helper, replaces useMutation)
-        layout/layout.ts navbar.ts  (app shell: Layout + Navbar)
+        auth/login.ts login.html    (Login stub)
       shared/                   # stateless, feature-agnostic; no imports from features/
-        ui/button.ts card.ts result-panel.ts file-field.ts   (result-panel = idle/pending/error/success shell)
+        ui/button.ts card.ts result-panel.ts file-field.ts layout.ts navbar.ts   (layout/navbar = app shell; result-panel = idle/pending/error/success shell)
         models/attachment.ts        (single FileAttachment type)
         utils/download.ts           (downloadAttachment)
       features/                 # one folder per route; lazy-loaded via loadComponent (add <feature>.routes.ts + loadChildren if a feature grows sub-pages)
         home/            home.ts home.html
-        auth/            login.ts login.html
         employee-benefits/  employee-benefits.ts .html  benefits.service.ts  benefits.models.ts
         bonus-calculation/  bonus-calculation.ts .html  bonus.service.ts  bonus.models.ts
         payroll-reconcile/  payroll-reconcile.ts .html  payroll-reconcile.service.ts  payroll-reconcile.models.ts

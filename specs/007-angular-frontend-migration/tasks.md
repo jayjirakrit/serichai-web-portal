@@ -27,7 +27,7 @@ description: "Task list for Angular Frontend Migration"
 - [X] T005 `app/core/config/api-config.ts` (`API_BASE_URL` token, provided as `''`), `app/app.config.ts` (`provideRouter`, `provideHttpClient(withFetch())`, global error listeners), `app/app.routes.ts` (lazy `loadComponent` for `''`, `login`, `employee-benefits`, `bonus-calculation`, `payroll-reconciliation`, `tax-deduction`; `**` redirects to `''`), `app/app.ts` (shell with router outlet), `main.ts`.
 - [X] T006 [P] `app/core/http/api-call.ts` (+ `.spec.ts`): signal helper per migration plan (`data/error/pending/status/run/reset`); error = `error.detail` else `Request failed with status <status>`; subscription ends with component (`DestroyRef`); spec covers idle/pending/success/error transitions, detail mapping, status 0, and no update after destroy.
 - [X] T007 [P] `app/shared/models/attachment.ts` (single `FileAttachment`) and `app/shared/utils/download.ts` `downloadAttachment()` (+ `.spec.ts`: base64 -> Blob, file name, object URL revoked).
-- [X] T008 [P] Shared UI and shell (+ smoke specs): `app/shared/ui/{button,card,result-panel,file-field}.ts` (result-panel = idle/pending/error/success shell; file-field shows inline validation message), `app/core/layout/{layout,navbar}.ts` using `<a class="btn">` (no button-in-link), `routerLinkActive` for the active page; port markup/classes from `frontend/src/components/` following the Tailwind class-order convention in `CLAUDE.md`.
+- [X] T008 [P] Shared UI and shell (+ smoke specs): `app/shared/ui/{button,card,result-panel,file-field}.ts` (result-panel = idle/pending/error/success shell; file-field shows inline validation message), `app/shared/ui/{layout,navbar}.ts` using `<a class="btn">` (no button-in-link), `routerLinkActive` for the active page; port markup/classes from `frontend/src/components/` following the Tailwind class-order convention in `CLAUDE.md`.
 
 **Checkpoint**: `npm run build` green; empty routes lazy-load.
 
@@ -54,7 +54,7 @@ Each task: `<feature>.models.ts` (camelCase types from `data-model.md`), `<featu
 **Goal**: Same menu, routes, visuals; deep links and unknown addresses behave as today.
 **Independent Test**: Side-by-side screenshots vs. React app for Home + 4 pages (all states); direct-open/refresh each route; unknown path lands on Home.
 
-- [X] T013 [US2] `app/features/home/` and `app/features/auth/` (Login placeholder) ported from `frontend/src/pages/`; `app/app.routes.spec.ts` (routes resolve to lazy components, `**` -> Home, active-link class on navbar); fix visual drift found in the side-by-side screenshot review (Home + four pages, all states).
+- [X] T013 [US2] `app/features/home/` and `app/core/auth/` (Login placeholder) ported from `frontend/src/pages/`; `app/app.routes.spec.ts` (routes resolve to lazy components, `**` -> Home, active-link class on navbar); fix visual drift found in the side-by-side screenshot review (Home + four pages, all states).
 
 ---
 
