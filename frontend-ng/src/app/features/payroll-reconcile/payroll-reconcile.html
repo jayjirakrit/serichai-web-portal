@@ -1,0 +1,129 @@
+<app-layout>
+  <div class="min-h-screen bg-surface-bright">
+    <div class="payroll-reconcile-title flex flex-col justify-center p-8 pb-0">
+      <h3 class="bold pb-2">Payroll Reconciliation</h3>
+      <h6 class="text-neutral-500">
+        Recalculate employee net wages from the payroll working file and compare them to the stated
+        amounts.
+      </h6>
+    </div>
+    <div class="payroll-reconcile-content flex p-8 gap-4">
+      <div class="payroll-reconcile-content-files flex flex-col gap-2">
+        <h4 class="font-semibold">Data Source</h4>
+        <app-file-field
+          label="Payroll Working File"
+          [errorMessage]="fileError()"
+          (fileChange)="onFileChange($event)"
+          [required]="true"
+        />
+
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Pay Period <span class="text-error"> * </span></legend>
+          <input
+            type="month"
+            class="input"
+            [class.input-error]="periodError() !== null"
+            [attr.aria-invalid]="periodError() !== null ? 'true' : null"
+            [value]="period()"
+            (input)="onPeriodInput($event)"
+          />
+          @if (periodError() !== null) {
+            <p class="label text-error" role="alert">{{ periodError() }}</p>
+          }
+        </fieldset>
+
+        <app-button extraClass="w-fit" [disabled]="call.pending()" (click)="onSubmit()">
+          {{ call.pending() ? 'Processing...' : 'Submit' }}
+        </app-button>
+      </div>
+
+      <div class="payroll-reconcile-content-files flex flex-col gap-2">
+        <h4 class="font-semibold">Reconciliation Summary</h4>
+        <div
+          class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded"
+        >
+          <app-result-panel
+            [status]="call.status()"
+            [error]="call.error()"
+            pendingText="Reconciling payroll..."
+          >
+            <div idle class="flex flex-col items-center justify-center h-full">
+              <h4 class="font-semibold">Awaiting Data</h4>
+              <p class="text-center text-neutral-500">
+                Reconciliation summary will be displayed here after submitting.
+              </p>
+            </div>
+
+            @if (call.data(); as result) {
+              <div class="flex flex-col gap-3">
+                <div>
+                  <p>
+                    Total employees reconciled:
+                    <span class="font-semibold">{{ result.summary.totalEmployeesReconciled }}</span>
+                  </p>
+                  <p>
+                    Matched: <span class="font-semibold">{{ result.summary.matchedCount }}</span>
+                  </p>
+                  <p>
+                    Unmatched:
+                    <span class="font-semibold">{{ result.summary.discrepancyCount }}</span>
+                  </p>
+                </div>
+
+                @if (result.discrepancies.length > 0) {
+                  <div class="flex flex-col gap-1">
+                    <h5 class="font-semibold">Unmatched</h5>
+                    <ul class="flex flex-col gap-1 text-sm">
+                      @for (entry of result.discrepancies; track $index) {
+                        <li class="pb-1 border-b border-gray-200">
+                          <span class="font-medium">{{ entry.department }}</span>
+                          @if (entry.employeeName) {
+                            — {{ entry.employeeName }}
+                          } @else if (entry.employeeId) {
+                            — {{ entry.employeeId }}
+                          }
+                          <span class="text-neutral-500">({{ entry.status }})</span>
+                          <br />
+                          @if (entry.statedAmount !== null && entry.recalculatedAmount !== null) {
+                            <span class="text-red-500">
+                              Stated: {{ entry.statedAmount }} : Recalculated:
+                              {{ entry.recalculatedAmount }}
+                            </span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <div class="flex flex-col gap-2">
+                  <app-button extraClass="w-fit" (click)="download(result.reconciliationReport)">
+                    Download Reconciliation Report
+                  </app-button>
+                  @if (result.discrepancyReport; as report) {
+                    <app-button extraClass="w-fit" (click)="download(report)">
+                      Download Unmatched Report
+                    </app-button>
+                  }
+                </div>
+              </div>
+            }
+          </app-result-panel>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <h4 class="font-semibold">Instruction</h4>
+        <div class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded">
+          <ol class="list-decimal list-inside">
+            <li>Prepare payroll input file.</li>
+            <li>Upload the file.</li>
+            <li>Select the pay period with same date as the uploaded file <strong>e.g. file name: ช69-4 will select April 2026</strong></li>
+            <li>Click Submit.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</app-layout>

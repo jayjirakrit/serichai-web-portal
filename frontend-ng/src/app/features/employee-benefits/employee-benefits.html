@@ -1,0 +1,113 @@
+<app-layout>
+  <div class="min-h-screen bg-surface-bright">
+    <div class="emp-bene-title flex flex-col justify-center p-8 pb-0">
+      <h3 class="bold pb-2">Employee Benefits Calculation</h3>
+      <h6 class="text-neutral-500">
+        Compute the annual employee benefit liability directly from the employee master data.
+      </h6>
+    </div>
+    <div class="emp-bene-content flex flex-wrap gap-4 p-8">
+      <div class="emp-bene-content-files flex flex-col gap-2">
+        <h4 class="font-semibold">Data Source</h4>
+        <app-file-field
+          label="Employee Master Data"
+          [errorMessage]="masterError()"
+          (fileChange)="onMasterChange($event)"
+          [required]="true"
+        />
+        <app-file-field
+          label="Previous Employee Benefits"
+          (fileChange)="previousBenefitsFile.set($event)"
+        />
+        <app-button extraClass="w-fit" [disabled]="call.pending()" (click)="onSubmit()">
+          {{ call.pending() ? 'Processing...' : 'Submit' }}
+        </app-button>
+      </div>
+
+      <div class="emp-bene-content-files flex flex-col gap-2">
+        <h4 class="font-semibold">Validation Summary</h4>
+        <div
+          class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded"
+        >
+          <app-result-panel
+            [status]="call.status()"
+            [error]="call.error()"
+            pendingText="Calculating benefits..."
+          >
+            <div idle class="flex flex-col items-center justify-center h-full">
+              <h4 class="font-semibold">Awaiting Data</h4>
+              <p class="text-center text-neutral-500">
+                Validation summary will be displayed here after calculating the benefit.
+              </p>
+            </div>
+
+            @if (call.data(); as result) {
+              <div class="flex flex-col gap-3">
+                <div>
+                  <p>
+                    Total employees out:
+                    <span class="font-semibold">{{ result.summary.totalEmployeesOut }}</span>
+                  </p>
+                  <p>
+                    Computed: <span class="font-semibold">{{ result.summary.computedCount }}</span>
+                  </p>
+                  <p>
+                    Resigned flagged:
+                    <span class="font-semibold">{{ result.summary.resignedFlaggedCount }}</span>
+                  </p>
+                  <p>
+                    Exceptions:
+                    <span class="font-semibold">{{ result.summary.exceptionCount }}</span>
+                  </p>
+                </div>
+
+                @if (result.exceptions.length > 0) {
+                  <div class="flex flex-col gap-1">
+                    <h5 class="font-semibold">Exceptions</h5>
+                    <ul class="flex flex-col gap-1 text-sm">
+                      @for (exception of result.exceptions; track $index) {
+                        <li class="pb-1 border-b border-gray-200">
+                          <span class="font-medium">{{ exception.category }}</span>
+                          @if (exception.employeeName) {
+                            &mdash; {{ exception.employeeName }}
+                          } @else if (exception.employeeId) {
+                            &mdash; {{ exception.employeeId }}
+                          }
+                          <br />
+                          <span class="text-neutral-500">{{ exception.detail }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <div class="flex flex-col gap-2">
+                  <app-button extraClass="w-fit" (click)="download(result.employeeBenefitsReport)">
+                    Download Benefit Report
+                  </app-button>
+                  <app-button extraClass="w-fit" (click)="download(result.exceptionReport)">
+                    Download Exception Report
+                  </app-button>
+                </div>
+              </div>
+            }
+          </app-result-panel>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <h4 class="font-semibold">Instruction</h4>
+        <div class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded">
+          <ol class="list-decimal list-inside">
+            <li>Prepare employee input file.</li>
+            <li>Prepare previous benefits file (if applicable).</li>
+            <li><a [href]="templateUrl" download="Tax_Reduction_Input.xlsx"><strong>Download</strong></a> the template and fill data.</li>
+            <li>Upload the files.</li>
+            <li>Click Submit.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</app-layout>

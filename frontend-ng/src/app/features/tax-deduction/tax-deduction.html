@@ -1,0 +1,111 @@
+<app-layout>
+  <div class="min-h-screen bg-surface-bright">
+    <div class="flex flex-col justify-center p-8 pb-0">
+      <h3 class="pb-2 bold">Elderly-Employee Tax Deduction</h3>
+      <h6 class="text-neutral-500">Compute the elderly-employee tax deduction directly from the payroll data and download the filled workbook.</h6>
+    </div>
+    <div class="flex gap-4 p-8">
+      <div class="flex flex-col gap-2">
+        <h4 class="font-semibold">Data Source</h4>
+        <app-file-field label="Source File" [errorMessage]="fileError()" (fileChange)="onFile($event)" [required]="true" />
+        <app-button extraClass="w-fit" [disabled]="call.pending()" (click)="onSubmit()">
+          {{ call.pending() ? 'Processing...' : 'Submit' }}
+        </app-button>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <h4 class="font-semibold">Result Summary</h4>
+        <div class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded">
+          <app-result-panel [status]="call.status()" [error]="call.error()" pendingText="Calculating tax deduction...">
+            <div idle class="flex flex-col items-center justify-center h-full">
+              <h4 class="font-semibold">Awaiting Data</h4>
+              <p class="text-center text-neutral-500">Result summary will be displayed here after calculating the deduction.</p>
+            </div>
+            @if (call.data(); as result) {
+              <div class="flex flex-col gap-3">
+                <div>
+                  <p>Reference date: <span class="font-semibold">{{ result.summary.referenceDate }}</span></p>
+                  <p>Total headcount: <span class="font-semibold">{{ result.summary.totalHeadcount }}</span></p>
+                  <p>Eligible: <span class="font-semibold">{{ result.summary.eligibleCount }}</span></p>
+                  <p>Headcount cap: <span class="font-semibold">{{ result.summary.headcountCap }}</span></p>
+                  <p>Selected: <span class="font-semibold">{{ result.summary.selectedCount }}</span></p>
+                </div>
+
+                <div class="border border-gray-200 rounded collapse collapse-arrow bg-surface-low">
+                  <input type="checkbox" checked aria-label="Toggle active rules" />
+                  <div class="font-semibold collapse-title">Active rules for this run</div>
+                  <div class="flex flex-col gap-1 collapse-content">
+                    <p>Age threshold: <span class="font-semibold">&gt; {{ result.summary.ageThreshold }}</span></p>
+                    <p>Salary cap per month: <span class="font-semibold">{{ (result.summary.salaryCapPerMonth | number: '1.0-2') ?? '-' }}</span></p>
+                    <p>Headcount cap: <span class="font-semibold">{{ (result.summary.headcountCapPercent * 100).toFixed(0) }}%</span></p>
+                    <p>BE year offset: <span class="font-semibold">{{ result.summary.beYearOffset }}</span></p>
+                    <p>Reference date used: <span class="font-semibold">{{ result.summary.referenceDate }}</span></p>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <app-button extraClass="w-fit" (click)="downloadAttachment(result.taxDeductionReport)">
+                    Download Filled Workbook
+                  </app-button>
+                </div>
+              </div>
+            }
+          </app-result-panel>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <h4 class="font-semibold">Instruction</h4>
+        <div class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded">
+          <ol class="list-decimal list-inside">
+            <li>Prepare employee input file.</li>
+            <li><a [href]="templateUrl" download="Tax_Reduction_Input.xlsx"><strong>Download</strong></a> the template and fill data.</li>
+            <li>Upload the file.</li>
+            <li>Click Submit.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    @if (call.data(); as result) {
+      <div class="flex flex-col gap-2 px-8 pb-8">
+        <h4 class="font-semibold">Employee Breakdown</h4>
+        <div class="w-full overflow-auto bg-white border border-gray-300 rounded max-h-128">
+          <table class="table table-sm table-zebra table-pin-rows">
+            <thead>
+              <tr>
+                <th>Seq</th>
+                <th>Name</th>
+                <th class="text-right">Age</th>
+                <th class="text-right">Avg. Salary</th>
+                <th>Status</th>
+                @for (label of monthLabels; track label) {
+                  <th class="text-right">{{ label }}</th>
+                }
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (employee of result.employees; track employee.seq) {
+                @let status = getEmployeeStatus(employee);
+                <tr>
+                  <td>{{ employee.seq }}</td>
+                  <td class="whitespace-nowrap">{{ employee.prefix }}{{ employee.firstName }} {{ employee.lastName }}</td>
+                  <td class="text-right">{{ employee.age ?? '-' }}</td>
+                  <td class="text-right">{{ (employee.averageMonthlySalary | number: '1.0-2') ?? '-' }}</td>
+                  <td class="whitespace-nowrap">
+                    <span class="whitespace-nowrap badge {{ status.badgeClass }}">{{ status.label }}</span>
+                  </td>
+                  @for (amount of employee.monthlyAmounts; track $index) {
+                    <td class="text-right">{{ (amount | number: '1.0-2') ?? '-' }}</td>
+                  }
+                  <td class="font-semibold text-right">{{ (employee.totalAmount | number: '1.0-2') ?? '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+</app-layout>

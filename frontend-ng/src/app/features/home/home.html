@@ -1,0 +1,14 @@
+<app-layout>
+  <div class="h-screen bg-surface-bright">
+    <div class="home-title flex flex-col justify-center p-8">
+      <h6 class="text-primary pb-2">Home</h6>
+      <h3 class="bold">Welcome to Serichai Web Portal</h3>
+    </div>
+
+    <div class="home-content grid grid-cols-4 gap-6 p-8">
+      @for (feature of features; track feature.link) {
+        <app-card [title]="feature.title" [description]="feature.description" [link]="feature.link" />
+      }
+    </div>
+  </div>
+</app-layout>

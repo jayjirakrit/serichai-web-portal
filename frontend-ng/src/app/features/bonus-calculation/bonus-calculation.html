@@ -1,0 +1,130 @@
+<app-layout>
+  <div class="h-screen bg-surface-bright">
+    <div role="tablist" class="tabs tabs-bordered px-8 pt-4">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab-active]="tab() === 'cal'"
+        [attr.aria-selected]="tab() === 'cal'"
+        (click)="tab.set('cal')"
+      >
+        Calculation
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab-active]="tab() === 'config'"
+        [attr.aria-selected]="tab() === 'config'"
+        (click)="tab.set('config')"
+      >
+        Configuration
+      </button>
+    </div>
+
+    <div class="emp-bene-title flex flex-col justify-center p-8 pb-0">
+      <h3 class="bold pb-2">Bonus Calculation</h3>
+      <h6 class="text-neutral-500">Process bonus calculations for the current fiscal period.</h6>
+    </div>
+
+    @if (tab() === 'cal') {
+      <div class="emp-bene-content flex gap-4 p-8">
+        <div class="emp-bene-content-files flex flex-col gap-2">
+          <h4 class="font-semibold">Data Source</h4>
+          <app-file-field
+            label="Current-Year Data File"
+            [errorMessage]="submitted() && !currentYearFile() ? 'Please upload the current-year data file.' : null"
+            (fileChange)="currentYearFile.set($event)"
+            [required]="true"
+          />
+          <app-file-field
+            label="Previous-Year Summary File"
+            (fileChange)="previousYearSummaryFile.set($event)"
+          />
+
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Year</legend>
+            <input
+              type="number"
+              class="input"
+              [class.input-error]="submitted() && !year()"
+              placeholder="e.g. 2025"
+              [value]="year()"
+              (input)="onYearInput($event)"
+            />
+            @if (submitted() && !year()) {
+              <p class="label text-error" role="alert">Please enter the year to calculate.</p>
+            }
+          </fieldset>
+
+          <app-button extraClass="w-fit" [disabled]="calculation.pending()" (click)="submit()">
+            {{ calculation.pending() ? 'Calculating...' : 'Calculate Bonus' }}
+          </app-button>
+        </div>
+
+        <div class="emp-bene-content-files flex flex-col gap-2">
+          <h4 class="font-semibold">Calculation Summary</h4>
+          <div class="flex h-96 w-96 flex-col overflow-y-auto rounded border border-gray-300 bg-white p-4">
+            <app-result-panel
+              [status]="calculation.status()"
+              [error]="calculation.error()"
+              pendingText="Calculating bonus..."
+            >
+              <div idle class="flex h-full flex-col items-center justify-center">
+                <h4 class="font-semibold">Awaiting Data</h4>
+                <p class="text-center text-neutral-500">
+                  Calculation summary will be displayed here after submitting.
+                </p>
+              </div>
+
+              @if (calculation.data(); as result) {
+                <div class="flex flex-col gap-3">
+                  <div>
+                    <p>Total employees: <span class="font-semibold">{{ result.summary.totalEmployees }}</span></p>
+                    <p>Calculated: <span class="font-semibold">{{ result.summary.calculatedCount }}</span></p>
+                    <p>Exceptions: <span class="font-semibold">{{ result.summary.exceptionCount }}</span></p>
+                  </div>
+
+                  @if (result.flaggedEmployees.length === 0) {
+                    <p class="font-medium text-success">All employees calculated successfully — 0 exceptions</p>
+                  } @else {
+                    <div class="flex flex-col gap-1">
+                      <h5 class="font-semibold">Flagged Employees</h5>
+                      <ul class="flex flex-col gap-1 text-sm">
+                        @for (employee of result.flaggedEmployees; track $index) {
+                          <li class="border-b border-gray-200 pb-1">
+                            <span class="font-medium">{{ employee.firstName }} {{ employee.lastName }}</span>
+                            <br />
+                            <span class="text-red-500">{{ employee.exceptionNote }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  <app-button extraClass="w-fit" (click)="download(result.bonusReport)">
+                    Download Bonus Report
+                  </app-button>
+                </div>
+              }
+            </app-result-panel>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <h4 class="font-semibold">Instruction</h4>
+          <div class="flex flex-col w-96 h-96 p-4 overflow-y-auto bg-white border border-gray-300 rounded">
+            <ol class="list-decimal list-inside">
+              <li>Prepare employee input file.</li>
+              <li>Prepare previous benefits file (if applicable).</li>
+              <li><a [href]="templateUrl" download="Tax_Reduction_Input.xlsx"><strong>Download</strong></a> the template and fill data.</li>
+              <li>Upload the files.</li>
+              <li>Click Submit.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</app-layout>
