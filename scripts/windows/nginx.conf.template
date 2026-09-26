@@ -1,0 +1,42 @@
+# Generated into nginx\conf\portal.conf by _common.ps1 (Update-NginxConfig).
+worker_processes 1;
+error_log logs/error.log warn;
+pid       logs/nginx.pid;
+
+events { worker_connections 512; }
+
+http {
+    include      mime.types;
+    default_type application/octet-stream;
+    sendfile     on;
+    access_log   logs/access.log;
+
+    server {
+        listen __PORT__;
+        server_name _;
+
+        root __DIST__;
+        index index.html;
+
+        # Excel uploads: nginx's 1 MB default would reject larger workbooks.
+        client_max_body_size 20m;
+
+        # SPA fallback for client-side (Angular router) routes.
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # API + health go to the loopback-only FastAPI backend.
+        location /accounts/ {
+            proxy_pass http://127.0.0.1:__BACKEND_PORT__;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_read_timeout 120s;
+            proxy_send_timeout 120s;
+        }
+
+        location = /health {
+            proxy_pass http://127.0.0.1:__BACKEND_PORT__;
+        }
+    }
+}

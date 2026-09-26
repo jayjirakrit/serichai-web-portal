@@ -5,8 +5,11 @@
   1. Installs Python 3.13 and Node.js LTS via winget (if missing)
   2. Creates backend\.venv and installs requirements.txt
   3. npm ci + builds the Angular app (frontend-ng)
-  4. Registers Scheduled Task 'SerichaiWebPortal' (runs as SYSTEM at startup, no login needed)
-  5. Starts it and waits for /health
+  4. Downloads nginx (official Windows zip) into scripts\windows\nginx
+  5. Registers Scheduled Task 'SerichaiWebPortal' (runs as SYSTEM at startup, no login needed)
+  6. Starts it and waits for /health (through nginx)
+  nginx listens on the public port and serves the SPA; uvicorn is loopback-only
+  and receives /accounts/* via nginx's reverse proxy.
   Run from an elevated PowerShell. Safe to re-run (also use it to deploy updates).
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\scripts\windows\setup.ps1
@@ -70,7 +73,7 @@ Write-Host "`n== Serichai Web Portal setup ==" -ForegroundColor Cyan
 
 # --- 1. Runtimes ---------------------------------------------------------
 if (-not $SkipInstall) {
-    Write-Host "`n[1/4] Checking runtimes" -ForegroundColor Cyan
+    Write-Host "`n[1/5] Checking runtimes" -ForegroundColor Cyan
     if (-not (Find-Python)) {
         Write-Host '  Installing Python 3.13...'
         Install-WingetPackage 'Python.Python.3.13'
@@ -86,7 +89,7 @@ if (-not $py) { throw 'Python >= 3.13 not found on PATH. Install it or re-run wi
 if (-not (Test-NodeOk)) { throw 'Node.js >= 24.15 not found on PATH. Install it or re-run without -SkipInstall.' }
 
 # --- 2. Backend ----------------------------------------------------------
-Write-Host "`n[2/4] Backend dependencies" -ForegroundColor Cyan
+Write-Host "`n[2/5] Backend dependencies" -ForegroundColor Cyan
 $backend = Join-Path $RepoRoot 'backend'
 $venvDir = Join-Path $backend '.venv'
 $venvPy  = Join-Path $venvDir 'Scripts\python.exe'
@@ -105,7 +108,7 @@ Invoke-Checked 'pip install' { & $venvPy -m pip install --disable-pip-version-ch
 $frontend = Join-Path $RepoRoot 'frontend-ng'
 $dist = Join-Path $frontend 'dist\serichai-web-portal\browser'
 if (-not $SkipBuild) {
-    Write-Host "`n[3/4] Building Angular frontend" -ForegroundColor Cyan
+    Write-Host "`n[3/5] Building Angular frontend" -ForegroundColor Cyan
     Push-Location $frontend
     try {
         Invoke-Checked 'npm ci'        { npm ci }
@@ -116,8 +119,29 @@ if (-not (Test-Path (Join-Path $dist 'index.html'))) {
     throw "Frontend build output not found at $dist. Re-run without -SkipBuild."
 }
 
-# --- 4. Scheduled task ---------------------------------------------------
-Write-Host "`n[4/4] Registering startup task '$TaskName'" -ForegroundColor Cyan
+# --- 4. nginx -------------------------------------------------------------
+Write-Host "`n[4/5] nginx" -ForegroundColor Cyan
+Stop-PortalProcesses   # nginx.exe can't be replaced while running
+if (-not (Test-Path $NginxExe)) {
+    if ($SkipInstall) { throw "nginx not found at $NginxExe. Re-run without -SkipInstall." }
+    $zip = Join-Path $env:TEMP "nginx-$NginxVersion.zip"
+    $tmp = Join-Path $env:TEMP "nginx-extract-$NginxVersion"
+    Write-Host "  Downloading nginx $NginxVersion..."
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest "https://nginx.org/download/nginx-$NginxVersion.zip" -OutFile $zip -UseBasicParsing
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    Expand-Archive $zip -DestinationPath $tmp -Force
+    New-Item -ItemType Directory -Force -Path $NginxDir | Out-Null
+    Copy-Item (Join-Path $tmp "nginx-$NginxVersion\*") $NginxDir -Recurse -Force
+    Remove-Item $zip, $tmp -Recurse -Force
+} else { Write-Host '  nginx OK' }
+$BackendPort = Get-BackendPort
+Update-NginxConfig -Port $Port -BackendPort $BackendPort
+New-Item -ItemType Directory -Force -Path (Join-Path $NginxDir 'logs'), (Join-Path $NginxDir 'temp') | Out-Null
+Invoke-Checked 'nginx config test' { & $NginxExe -p $NginxDir -c $NginxConf -t }
+
+# --- 5. Scheduled task ---------------------------------------------------
+Write-Host "`n[5/5] Registering startup task '$TaskName'" -ForegroundColor Cyan
 $startScript = Join-Path $PSScriptRoot 'start-portal.ps1'
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$startScript`"" `
@@ -132,14 +156,12 @@ $settings  = New-ScheduledTaskSettingsSet `
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 }
-# Free the port: an old uvicorn child may outlive the task stop (also covers manual runs).
-Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
-    Where-Object { $_.CommandLine -like "*$venvDir*" -and $_.CommandLine -like '*uvicorn*' } |
-    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+# Free the ports: old nginx/uvicorn children may outlive the task stop (also covers manual runs).
+Stop-PortalProcesses
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Principal $principal -Settings $settings `
-    -Description 'Serichai Web Portal (FastAPI + Angular) - starts at boot' -Force | Out-Null
+    -Description 'Serichai Web Portal (nginx + FastAPI + Angular) - starts at boot' -Force | Out-Null
 Start-ScheduledTask -TaskName $TaskName
 
 Write-Host "  Waiting for http://127.0.0.1:$Port/health ..." -NoNewline
@@ -153,7 +175,7 @@ for ($i = 0; $i -lt 40 -and -not $healthy; $i++) {
 }
 Write-Host ''
 if (-not $healthy) {
-    throw "Portal did not become healthy. Check $(Join-Path $PSScriptRoot 'logs\portal.err.log')"
+    throw "Portal did not become healthy. Check $(Join-Path $PSScriptRoot 'logs\portal.err.log') and $(Join-Path $NginxDir 'logs\error.log')"
 }
 
 Write-Host "`nPortal is running: http://localhost:$Port" -ForegroundColor Green

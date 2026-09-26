@@ -188,3 +188,4 @@ backend/.env.*
 # Windows install scripts (runtime state)
 scripts/windows/logs/
 scripts/windows/portal.config.json
+scripts/windows/nginx/

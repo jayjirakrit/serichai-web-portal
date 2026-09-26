@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Removes the startup task and firewall rule. Leaves Python/Node and the repo untouched.
+  Removes the startup task and firewall rule. Leaves Python/Node, the repo and the downloaded nginx\ folder untouched.
 #>
 [CmdletBinding()]
 param()
@@ -15,13 +15,8 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Write-Host "Removed scheduled task '$TaskName'."
 }
 
-$venvDir = Join-Path $RepoRoot 'backend\.venv'
-Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
-    Where-Object { $_.CommandLine -like "*$venvDir*" -and $_.CommandLine -like '*uvicorn*' } |
-    ForEach-Object {
-        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-        Write-Host "Stopped process $($_.ProcessId)."
-    }
+Stop-PortalProcesses
+Write-Host 'Stopped nginx/uvicorn processes (if any).'
 
 if (Get-NetFirewallRule -DisplayName $RuleName -ErrorAction SilentlyContinue) {
     Remove-NetFirewallRule -DisplayName $RuleName

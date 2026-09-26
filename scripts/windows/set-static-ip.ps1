@@ -53,11 +53,11 @@ $alias = $cfg.InterfaceAlias
 $ifIdx = $cfg.InterfaceIndex
 
 if ($Revert) {
-    Set-NetIPInterface -InterfaceIndex $ifIdx -Dhcp Enabled
     Get-NetRoute -InterfaceIndex $ifIdx -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
         Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
     Get-NetIPAddress -InterfaceIndex $ifIdx -AddressFamily IPv4 -PrefixOrigin Manual -ErrorAction SilentlyContinue |
         Remove-NetIPAddress -Confirm:$false -ErrorAction SilentlyContinue
+    Set-NetIPInterface -InterfaceIndex $ifIdx -Dhcp Enabled
     Set-DnsClientServerAddress -InterfaceIndex $ifIdx -ResetServerAddresses
     Write-Host "'$alias' is back on DHCP." -ForegroundColor Green
     return

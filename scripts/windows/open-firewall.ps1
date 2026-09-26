@@ -3,9 +3,10 @@
   Allows other machines on the same Wi-Fi/LAN to reach the portal.
 .DESCRIPTION
   Creates an inbound TCP allow rule for the portal port, limited to the local
-  subnet and to Private/Domain network profiles. Windows marks new Wi-Fi networks
-  as "Public" by default, which the rule does not cover - use -MakeNetworkPrivate
-  to switch the connected network(s) to Private.
+  subnet and to Private/Domain network profiles (never Public). Windows marks new
+  Wi-Fi networks as "Public" by default, which the rule does not cover - use
+  -MakeNetworkPrivate to switch the currently connected Public network(s) to
+  Private. Only do that on a network you trust (home/office).
 .EXAMPLE
   .\open-firewall.ps1 -MakeNetworkPrivate
   .\open-firewall.ps1 -Remove
