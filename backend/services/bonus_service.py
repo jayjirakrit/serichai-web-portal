@@ -453,7 +453,7 @@ def _join_sources(
     working_day_df: pd.DataFrame,
     evaluation_df: pd.DataFrame,
     leave_df: pd.DataFrame,
-    previous_summary_df: pd.DataFrame,
+    previous_summary_df: pd.DataFrame | None,
 ) -> pd.DataFrame:
     """Left-joins evaluation/leave/previous-summary onto the working-day base
     by `match_key`. A `match_key` colliding within a joined source (distinct
@@ -481,15 +481,21 @@ def _join_sources(
     leave_not_found = df["_leave_merge"] == "left_only"
     df = df.drop(columns=["_leave_merge"])
 
-    prev_safe = previous_summary_df[~previous_summary_df["duplicate_name"]]
-    df = df.merge(
-        prev_safe[["match_key", "previous_grade_letter", "previous_bonus"]],
-        on="match_key",
-        how="left",
-        indicator="_prev_merge",
-    )
-    previous_bonus_not_found = df["_prev_merge"] == "left_only"
-    df = df.drop(columns=["_prev_merge"])
+    if previous_summary_df is None:
+        # Optional file not supplied: nothing to look up, so no not-found flag.
+        df["previous_grade_letter"] = None
+        df["previous_bonus"] = np.nan
+        previous_bonus_not_found = pd.Series(False, index=df.index)
+    else:
+        prev_safe = previous_summary_df[~previous_summary_df["duplicate_name"]]
+        df = df.merge(
+            prev_safe[["match_key", "previous_grade_letter", "previous_bonus"]],
+            on="match_key",
+            how="left",
+            indicator="_prev_merge",
+        )
+        previous_bonus_not_found = df["_prev_merge"] == "left_only"
+        df = df.drop(columns=["_prev_merge"])
 
     ot_category_unrecognized = ~df["ot_category_code"].isin(OT_SCORE_TABLES.keys())
 
@@ -572,7 +578,7 @@ def _build_exception_note(exceptions: list[str]) -> str | None:
 # --- Internal pipeline & wire orchestrator --------------------------------
 
 
-def _score_all_employees(current_year_content: bytes, previous_year_summary_content: bytes, year: str) -> pd.DataFrame:
+def _score_all_employees(current_year_content: bytes, previous_year_summary_content: bytes | None, year: str) -> pd.DataFrame:
     """Internal pipeline: scores every employee in the working-day (base)
     sheet, flagged or not. Tests call this directly to inspect non-flagged
     employees' computed scores; `calculate_bonus()` narrows its result to
@@ -583,7 +589,10 @@ def _score_all_employees(current_year_content: bytes, previous_year_summary_cont
     working_day_df = _parse_working_day_sheet(current_year_content, current_be_year)
     evaluation_df = _parse_evaluation_sheet(current_year_content, current_be_year)
     leave_df = _parse_leave_sheet(current_year_content, current_be_year)
-    previous_summary_df = _parse_previous_summary_sheet(previous_year_summary_content, previous_be_year)
+    if previous_year_summary_content is not None:
+        previous_summary_df = _parse_previous_summary_sheet(previous_year_summary_content, previous_be_year)
+    else:
+        previous_summary_df = None
 
     joined = _join_sources(working_day_df, evaluation_df, leave_df, previous_summary_df)
     scored = _score_employees(joined)
@@ -621,7 +630,7 @@ def _row_to_record_dict(row: pd.Series) -> dict:
     return record
 
 
-def calculate_bonus(current_year_content: bytes, previous_year_summary_content: bytes, year: str) -> dict:
+def calculate_bonus(current_year_content: bytes, previous_year_summary_content: bytes | None, year: str) -> dict:
     current_be_year, previous_be_year = _resolve_be_years(year)
     all_employees = _score_all_employees(current_year_content, previous_year_summary_content, year)
 

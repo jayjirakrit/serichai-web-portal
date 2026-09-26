@@ -60,11 +60,11 @@ async def reconcile_payroll(
 @router.post("/bonus-calculation", response_model=CalculateBonusResponse)
 async def calculate_bonus(
     currentYearFile: UploadFile = File(...),
-    previousYearSummaryFile: UploadFile = File(...),
+    previousYearSummaryFile: UploadFile | None = File(None),
     year: str = Form(...),
 ):
     current_year_content = await currentYearFile.read()
-    previous_year_summary_content = await previousYearSummaryFile.read()
+    previous_year_summary_content = await previousYearSummaryFile.read() if previousYearSummaryFile else None
 
     try:
         result = bonus_service.calculate_bonus(
