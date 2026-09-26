@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     environment:
       DATA_DIR: /app/data
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
     volumes:
       - ${HOST_DATA_DIR:-./backend/data}:/app/data:ro
     healthcheck:

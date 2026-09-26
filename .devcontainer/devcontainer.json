@@ -10,10 +10,10 @@
     }
   },
   "workspaceFolder": "/workspace",
-  "forwardPorts": [5173, 8000],
+  "forwardPorts": [4200, 8000],
   "portsAttributes": {
-    "5173": { "label": "Frontend (npm run dev)" },
+    "4200": { "label": "Frontend (npm start)" },
     "8000": { "label": "Backend (uvicorn)" }
   },
-  "postCreateCommand": "cd frontend && npm install && cd ../backend && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt"
+  "postCreateCommand": "cd frontend && npm ci && cd ../backend && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt"
 }
