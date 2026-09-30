@@ -60,6 +60,7 @@ specs/007-angular-frontend-migration/
 ├── plan.md
 ├── research.md
 ├── data-model.md
+├── design.md
 ├── quickstart.md
 ├── contracts/
 │   ├── benefits-api-angular.md
