@@ -8,8 +8,6 @@ from fastapi.responses import FileResponse
 from routers import accounts_router
 
 app = FastAPI()
-app.include_router(accounts_router)
-
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
@@ -18,7 +16,7 @@ def health_check() -> dict[str, str]:
 
 CORS_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:4200").split(",")
     if origin.strip()
 ]
 
@@ -29,6 +27,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(accounts_router)
 
 # Optional: serve the built Angular bundle from this process (used by the
 # native Windows install, scripts/windows/). Unset in dev and in Docker, where
