@@ -6,24 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Serichai Web Portal — an internal tool for Serichai and Ch.Paisarn. Monorepo with two independently run apps that talk over HTTP:
 
-- `frontend/` — React 19 + TypeScript + Vite SPA
+- `frontend-ng/` — Angular 22 + TypeScript SPA (the main frontend; spec 007 task T017 renames it to `frontend/`)
+- `frontend/` — legacy React 19 + Vite SPA, frozen and to be deleted at the same cutover
 - `backend/` — FastAPI (Python) service
 
 There is no shared build, no monorepo tooling (Nx/Turborepo/workspaces), and no shared package between the two — they are just two sibling projects in one repo. Always `cd` into the relevant subfolder before running its tooling.
 
 ## Commands
 
-### Frontend (`frontend/`)
+### Frontend (`frontend-ng/`)
 
 ```
-npm install       # install deps
-npm run dev       # start Vite dev server (http://localhost:5173)
-npm run build     # tsc -b (typecheck) then vite build
-npm run lint      # eslint .
-npm run preview   # preview the production build
+npm ci            # install deps (Node >= 24.15)
+npm start         # ng serve with proxy.conf.json (http://localhost:4200, /accounts -> http://127.0.0.1:8000)
+npm run build     # ng build (strict type-check) -> dist/serichai-web-portal/browser
+npm run lint      # ng lint
+npm test          # ng test (Vitest); add -- --watch=false for a single run
 ```
 
-There is no test runner configured yet (no Jest/Vitest in `package.json`) — don't assume `npm test` works.
+The legacy React app in `frontend/` still uses `npm run dev` / `npm run build` / `npm run lint` until the cutover deletes it — don't add features there.
 
 ### Backend (`backend/`)
 
@@ -46,7 +47,7 @@ cp .env.example .env   # first time only; defaults work out of the box
 docker compose up      # serves the whole portal on http://localhost:8080 (or $PORT)
 ```
 
-This builds `backend/Dockerfile` and `frontend/Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend — see `frontend/nginx.conf`). The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
+This builds `backend/Dockerfile` and the frontend `Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend with a 20 MB upload limit — see `nginx.conf` next to it). Until the spec 007 cutover the compose file still builds the React app from `./frontend`; the Angular equivalents already live in `frontend-ng/`. The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
 
 ### Windows native install (`scripts/windows/`)
 
@@ -54,7 +55,7 @@ For a Windows machine that should run the portal permanently without Docker: `se
 
 ### Devcontainer (`.devcontainer/`)
 
-For onboarding: open the repo in a devcontainer-compatible editor to get Node 20 + Python 3.13 with both toolchains' dependencies pre-installed (`postCreateCommand`), then run the same `npm run dev` / `uvicorn --reload` commands above inside it — no local Node/Python install needed.
+For onboarding: open the repo in a devcontainer-compatible editor to get Node + Python 3.13 with both toolchains' dependencies pre-installed (`postCreateCommand`), then run the same `npm start` / `uvicorn --reload` commands above inside it — no local Node/Python install needed.
 
 ## Architecture
 
@@ -67,7 +68,7 @@ FastAPI app in `backend/main.py` mounts routers from `backend/routers/`, which d
 - `backend/services/<name>_service.py` holds the actual business logic, called by the matching router.
 - `backend/models/` and `backend/util/` exist as placeholders for future Pydantic models / shared helpers — currently empty.
 
-CORS in `main.py` is hardcoded to allow only `http://localhost:5173` (the Vite dev origin) — update this when deploying or adding another frontend origin.
+CORS in `main.py` reads `CORS_ORIGINS` (comma-separated, default `http://localhost:4200`, the Angular dev origin) — set it when deploying or adding another frontend origin. In dev the Angular proxy makes calls same-origin, so CORS rarely matters.
 
 Note: `services/accounts_service.py` currently reads its Excel input from a hardcoded absolute Windows path rather than `backend/data/`. Treat this as a known rough edge, not a pattern to copy — new services should take file input as a parameter/upload rather than a hardcoded path.
 
@@ -77,36 +78,40 @@ Note: `services/accounts_service.py` currently reads its Excel input from a hard
 - All JSON request/response bodies (and multipart form field names) use **camelCase** keys. Backend Python internals stay `snake_case` per PEP 8; bridge the two on each Pydantic model with a camelCase `alias_generator` (e.g. Pydantic's `to_camel`) plus `populate_by_name=True`, rather than hand-writing `Field(alias=...)` per field or exposing `snake_case` keys over the wire.
 - Frontend TypeScript types for API payloads should be written camelCase directly (matching the wire format) — no field-translation layer between `fetch`/`axios` calls and component code.
 
-### Frontend: pages/components/design-token structure
+### Frontend: core/shared/features structure
 
-- `src/pages/` — one component per route, wired up in `src/App.tsx` via `react-router` (`Routes`/`Route`), mounted at the root with `BrowserRouter` in `src/main.tsx`. Add new routes in `App.tsx`.
-- `src/components/` — shared UI (`Layout`, `Navbar`, `Button`, `Card`). `Layout` wraps page content with the `Navbar`.
-- `src/services/`, `src/utils/`, `src/hooks/` hold API clients, helpers, and hooks. `src/services/queryClient.ts` (the TanStack Query client, see below) is the only file there so far; `src/utils/` and `src/hooks/` are still empty placeholders. There is no per-resource API client yet (e.g. no `accountsService.ts` calling `/accounts/...`) — add those to `src/services/` as backend integration grows.
-- Styling is Tailwind CSS v4 (via `@tailwindcss/vite`, not the PostCSS plugin path) plus DaisyUI, using a custom `enterprise` DaisyUI theme defined in `tailwind.config.js`. All colors, typography, radii, and shadows are indirected through CSS custom properties (`var(--primary)`, `var(--fz-title)`, etc.) rather than literal Tailwind values — check `src/index.css` for the token definitions before introducing a new color/size, and prefer an existing token over a new literal.
-- Tailwind class ordering convention (from `frontend/README.md`): group utilities as **Layout → Sizing → Typography → Colors & Effects → States**, e.g. `flex items-center justify-between w-full h-14 bg-white shadow-sm hover:bg-gray-50 transition-all`.
-- The React Compiler is enabled via `@rolldown/plugin-babel` + `reactCompilerPreset()` in `vite.config.ts` — avoid patterns that defeat it (e.g. unnecessary `useMemo`/`useCallback` micro-optimizations are not needed here; the compiler handles this).
-- Path note: Vite 8 + rolldown-based build (`rolldown-vite` under the hood via the `vite` package version), and ESLint uses the flat-config format (`eslint.config.js`) with `typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh`.
+Angular app in `frontend-ng/src/app/` (standalone components, zoneless, TypeScript `strict` + `strictTemplates`):
+
+- `core/` — app-wide singletons: `core/http/api-call.ts` (the `apiCall` helper), `core/config/api-config.ts` (`API_BASE_URL` token), `core/auth/` (Login placeholder).
+- `shared/` — reusable UI (`shared/ui/`: `layout`, `navbar`, `button`, `card`, `result-panel`, `file-field`), `shared/models/`, `shared/utils/`.
+- `features/<name>/` — one folder per page/route: `<name>.ts` + `<name>.html` (component), `<name>.service.ts` (HTTP calls), `<name>.models.ts` (camelCase types matching the wire format), and `*.spec.ts` for each. Routes are lazy-loaded in `app.routes.ts` via `loadComponent`.
+- ESLint (`angular-eslint`, flat config) enforces boundaries: features must not import other features; `shared` must not import `core`/`features`. Use the `@/`, `@core/`, `@shared/`, `@features/` path aliases instead of relative imports.
+- Styling is Tailwind CSS v4 (via `@tailwindcss/postcss` in `.postcssrc.json`) plus DaisyUI, using the custom `enterprise` theme. Colors, typography, radii and shadows go through CSS custom properties (`var(--primary)`, `var(--fz-title)`, …) defined in `src/styles.css` — check it before introducing a new color/size, and prefer an existing token over a literal.
+- Tailwind class ordering: **Layout → Sizing → Typography → Colors & Effects → States**, e.g. `flex items-center justify-between w-full h-14 bg-white shadow-sm hover:bg-gray-50 transition-all`.
+- Build tooling: Angular CLI 22 (`@angular/build`), Vitest for tests, flat-config ESLint.
 
 ### Frontend: state management
 
-Pages currently use plain `useState` for local UI state (e.g. `EmployeeBenefits.tsx`). Follow this decision order rather than reaching for a global store by default:
+Follow this decision order rather than reaching for a global store by default:
 
-1. **Local component state (`useState`/`useReducer`)** — default choice for anything only one component (and maybe its direct children via props) cares about, e.g. form fields, toggles, the file-upload state in `EmployeeBenefits.tsx`. Keep state as close as possible to where it's used; don't lift it "just in case."
-2. **Lift state up** before reaching for Context — if two sibling components need the same state, move it to their nearest common parent and pass it down, rather than introducing a global store for a two-component problem.
-3. **Server/API state (data from the FastAPI backend) is not the same as UI state.** Model it with **TanStack Query (`@tanstack/react-query`)**, not `useState` + `useEffect` fetch-on-mount:
-   - `QueryClient` lives in `src/services/queryClient.ts`; `src/main.tsx` wraps the app in `QueryClientProvider` and mounts `ReactQueryDevtools` in dev builds only (`import.meta.env.DEV`).
-   - Put the actual `fetch`/`axios` calls in `src/services/` (one module per backend resource, e.g. an `accountsService.ts` calling `/accounts/...`), and consume them from components via `useQuery` (reads) / `useMutation` (writes, e.g. the benefits/master-data file uploads in `EmployeeBenefits.tsx`) — don't call `fetch` directly inside components.
-   - Give queries explicit, structured query keys (e.g. `["accounts", "benefits"]`) so caching/invalidation stays predictable as more endpoints are added.
-   - `@tanstack/eslint-plugin-query` (`flat/recommended`) is wired into `eslint.config.js` — don't disable its rules without reason; they catch missing query-key dependencies and other easy-to-miss query bugs.
-4. **React Context** — for genuinely cross-cutting client state with few, infrequent updates (auth/session user, active theme). Split unrelated concerns into separate contexts rather than one `AppContext`, so a change to one doesn't re-render consumers of the other.
-5. **Global client-state library (Zustand, Redux, etc.)** — don't add one preemptively. Only introduce it once multiple unrelated features need to read/write the same client state and prop-drilling/Context composition has actually become painful; this app is currently small enough that it hasn't.
-6. **Encapsulate reusable stateful logic in custom hooks** under `src/hooks/` (e.g. a future `useAuth`, or hooks that wrap `useQuery`/`useMutation` calls from `src/services/`) instead of duplicating logic across pages.
+1. **Local component state (`signal`/`computed`)** — default for anything only one component (and maybe its children via inputs) cares about: form fields, toggles, selected files. Keep state as close as possible to where it's used.
+2. **Lift state up** before introducing a shared service — if two siblings need the same state, move it to their nearest common parent.
+3. **Server/API state (data from the FastAPI backend) is not UI state.** Angular `HttpClient` is the sole server-state layer:
+   - Put HTTP calls in `features/<name>/<name>.service.ts` (`inject(HttpClient)`, `API_BASE_URL`, return `Observable<T>`); never call `HttpClient` from components.
+   - Components consume services through `apiCall(fn)` from `@core/http/api-call`, which exposes `data`, `error`, `pending`, `status`, `run`, `reset` as signals and cancels the request when the component is destroyed. Error text is `error.detail` from the backend, else `Request failed with status <status>`.
+4. **Injectable services with signals** — for genuinely cross-cutting client state with few, infrequent updates (auth/session user, active theme). Split unrelated concerns into separate services.
+5. **Global client-state library (NgRx, etc.)** — don't add one preemptively; only once unrelated features need the same client state and service composition has become painful.
+6. **Encapsulate reusable stateful logic** in `core/` or `shared/` helpers (like `apiCall`) instead of duplicating it across features.
+
+## Spec-Kit design sketches
+
+`/speckit-plan` also writes `specs/<feature>/design.md` (from `.specify/templates/design-template.md`): a review aid (~250-400 lines) showing the key implementation files as short key-path snippets (feature service/models/component/template, backend router/service/models, shared blocks, algorithms, decision-carrying config) plus approach, decisions, flow, risks and open questions, for the architect to review at the plan gate, before `/speckit-tasks`. It is the only spec artifact allowed to contain implementation code; engineers treat it as guidance and report any deviation.
 
 ## Git commit conventions
 
 - Do **not** add a `Co-Authored-By: Claude` (or any Anthropic/Claude attribution) trailer to commit messages in this repository. Commits should be authored under the user's own identity only.
 - Subject line is tagged `[TAG]` or `[TAG][AREA]`, imperative mood, lowercase after the tag: `[ADD]` (new capability), `[IMP]` (change/enhancement to existing behavior), `[DOCS]` (documentation-only, incl. spec-kit artifacts), each optionally paired with an area tag — `[BE]` (`backend/`), `[FE]` (`frontend/`), `[UI]`, `[DOC]`. Examples: `[ADD][BE] employee benefits calculation API`, `[IMP][FE] add previous benefits file upload for carryforward calculation`.
-- **Spec-kit feature specs**: when committing a new `specs/<NNN-feature-name>/` directory (spec, plan, research, data-model, contracts, quickstart, tasks, checklists), use `[DOCS] add <feature-name> feature spec` as the subject, with a body listing which artifacts are included, e.g.:
+- **Spec-kit feature specs**: when committing a new `specs/<NNN-feature-name>/` directory (spec, plan, research, data-model, contracts, quickstart, design, tasks, checklists), use `[DOCS] add <feature-name> feature spec` as the subject, with a body listing which artifacts are included, e.g.:
   ```
   [DOCS] add <feature-name> feature spec
 
@@ -118,5 +123,5 @@ Pages currently use plain `useState` for local UI state (e.g. `EmployeeBenefits.
 
 ## Cross-cutting notes
 
-- Frontend and backend are developed and run as two separate processes (`npm run dev` + `uvicorn`); there's no proxy configured in `vite.config.ts`, so frontend service calls must target the backend's full URL (e.g. `http://127.0.0.1:8000`) until a proxy or env-based base URL is introduced.
+- Frontend and backend are developed and run as two separate processes (`npm start` + `uvicorn`); the Angular dev server proxies `/accounts/*` to `http://127.0.0.1:8000` via `frontend-ng/proxy.conf.json`, so service calls use relative URLs (`API_BASE_URL` is `''`). In containers/Windows install, nginx or `backend/main.py` serves the built SPA and `/accounts/*` from one origin.
 - Employee benefit data (`backend/data/Employee_Benefit_Template.xlsx`) uses Thai-language column headers and Buddhist Era (BE) year conventions (BE = Gregorian year + 543) — preserve this convention when touching `accounts_service.py` or related date/year logic.
