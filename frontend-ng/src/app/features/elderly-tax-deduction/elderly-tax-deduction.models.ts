@@ -1,6 +1,6 @@
 import { FileAttachment } from '@shared/models/attachment';
 
-export interface TaxDeductionEmployeeResult {
+export interface ElderlyTaxDeductionEmployeeResult {
   seq: number;
   idCardNumber: string | null;
   prefix: string;
@@ -17,7 +17,7 @@ export interface TaxDeductionEmployeeResult {
   totalAmount: number;
 }
 
-export interface TaxDeductionSummary {
+export interface ElderlyTaxDeductionSummary {
   referenceDate: string;
   totalHeadcount: number;
   eligibleCount: number;
@@ -30,8 +30,8 @@ export interface TaxDeductionSummary {
   beYearOffset: number;
 }
 
-export interface CalculateTaxDeductionResponse {
-  summary: TaxDeductionSummary;
-  employees: TaxDeductionEmployeeResult[];
+export interface CalculateElderlyTaxDeductionResponse {
+  summary: ElderlyTaxDeductionSummary;
+  employees: ElderlyTaxDeductionEmployeeResult[];
   taxDeductionReport: FileAttachment;
 }

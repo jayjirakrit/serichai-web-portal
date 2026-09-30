@@ -6,16 +6,16 @@ import { Button } from '@shared/ui/button';
 import { FileField } from '@shared/ui/file-field';
 import { ResultPanel } from '@shared/ui/result-panel';
 import { downloadAttachment } from '@shared/utils/download';
-import { TaxDeductionService } from '@/features/tax-deduction/tax-deduction.service';
-import { TaxDeductionEmployeeResult } from '@/features/tax-deduction/tax-deduction.models';
+import { ElderlyTaxDeductionService } from '@/features/elderly-tax-deduction/elderly-tax-deduction.service';
+import { ElderlyTaxDeductionEmployeeResult } from '@/features/elderly-tax-deduction/elderly-tax-deduction.models';
 
 @Component({
   selector: 'app-tax-deduction',
   imports: [DecimalPipe, Layout, Button, FileField, ResultPanel],
-  templateUrl: './tax-deduction.html',
+  templateUrl: './elderly-tax-deduction.html',
 })
-export class TaxDeduction {
-  private readonly service = inject(TaxDeductionService);
+export class ElderlyTaxDeduction {
+  private readonly service = inject(ElderlyTaxDeductionService);
 
   protected readonly monthLabels = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -43,7 +43,7 @@ export class TaxDeduction {
     this.call.run(file);
   }
 
-  getEmployeeStatus(employee: TaxDeductionEmployeeResult): {
+  getEmployeeStatus(employee: ElderlyTaxDeductionEmployeeResult): {
     label: string;
     badgeClass: string;
   } {

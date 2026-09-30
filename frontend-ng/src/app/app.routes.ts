@@ -26,9 +26,9 @@ export const routes: Routes = [
       import('@features/payroll-reconcile/payroll-reconcile').then((m) => m.PayrollReconcile),
   },
   {
-    path: 'tax-deduction',
+    path: 'elderly-tax-deduction',
     loadComponent: () =>
-      import('@features/tax-deduction/tax-deduction').then((m) => m.TaxDeduction),
+      import('@features/elderly-tax-deduction/elderly-tax-deduction').then((m) => m.ElderlyTaxDeduction),
   },
   { path: '**', redirectTo: '' },
 ];

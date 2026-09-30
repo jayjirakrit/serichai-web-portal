@@ -3,12 +3,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { API_BASE_URL } from '@core/config/api-config';
-import { TaxDeduction } from '@/features/tax-deduction/tax-deduction';
-import { CalculateTaxDeductionResponse } from '@/features/tax-deduction/tax-deduction.models';
+import { ElderlyTaxDeduction } from '@/features/elderly-tax-deduction/elderly-tax-deduction';
+import { CalculateElderlyTaxDeductionResponse } from '@/features/elderly-tax-deduction/elderly-tax-deduction.models';
 
 const URL = 'http://api/accounts/tax-deduction';
 
-const RESPONSE: CalculateTaxDeductionResponse = {
+const RESPONSE: CalculateElderlyTaxDeductionResponse = {
   summary: {
     referenceDate: '2026-01-01',
     totalHeadcount: 2,
@@ -36,10 +36,10 @@ const RESPONSE: CalculateTaxDeductionResponse = {
   taxDeductionReport: { filename: 'r.xlsx', contentBase64: '' },
 };
 
-describe('TaxDeduction page', () => {
+describe('ElderlyTaxDeduction page', () => {
   async function setup() {
     await TestBed.configureTestingModule({
-      imports: [TaxDeduction],
+      imports: [ElderlyTaxDeduction],
       providers: [
         provideRouter([]),
         provideHttpClient(),
@@ -47,7 +47,7 @@ describe('TaxDeduction page', () => {
         { provide: API_BASE_URL, useValue: 'http://api' },
       ],
     }).compileComponents();
-    const fixture = TestBed.createComponent(TaxDeduction);
+    const fixture = TestBed.createComponent(ElderlyTaxDeduction);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     const http = TestBed.inject(HttpTestingController);

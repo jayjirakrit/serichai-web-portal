@@ -31,9 +31,9 @@ export class Home {
       link: '/payroll-reconciliation',
     },
     {
-      title: 'Tax Deduction',
+      title: 'Elderly Tax Deduction',
       description: 'Calculate and manage tax deduction for employees.',
-      link: '/tax-deduction',
+      link: '/elderly-tax-deduction',
     },
   ];
 }

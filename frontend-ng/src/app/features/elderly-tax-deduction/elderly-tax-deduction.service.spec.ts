@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '@core/config/api-config';
-import { TaxDeductionService } from '@/features/tax-deduction/tax-deduction.service';
+import { ElderlyTaxDeductionService } from '@/features/elderly-tax-deduction/elderly-tax-deduction.service';
 
-describe('TaxDeductionService', () => {
+describe('ElderlyTaxDeductionService', () => {
   it('POSTs only payrollFile as multipart', () => {
     TestBed.configureTestingModule({
       providers: [
@@ -13,7 +13,7 @@ describe('TaxDeductionService', () => {
         { provide: API_BASE_URL, useValue: 'http://api' },
       ],
     });
-    const svc = TestBed.inject(TaxDeductionService);
+    const svc = TestBed.inject(ElderlyTaxDeductionService);
     const http = TestBed.inject(HttpTestingController);
     const file = new File(['x'], 'p.xlsx');
 
