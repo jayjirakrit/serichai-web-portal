@@ -6,6 +6,7 @@ services:
     environment:
       DATA_DIR: /app/data
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      APP_VERSION: ${APP_VERSION:-dev}
     volumes:
       - ${HOST_DATA_DIR:-./backend/data}:/app/data:ro
     healthcheck:
