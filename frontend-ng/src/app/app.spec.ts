@@ -26,6 +26,7 @@ describe('App', () => {
       'bonus-calculation',
       'payroll-reconciliation',
       'elderly-tax-deduction',
+      'about',
       '**',
     ]);
     expect(routes.at(-1)?.redirectTo).toBe('');

@@ -10,6 +10,7 @@ import { RouterLink } from '@angular/router';
         <a class="font-semibold text-xl text-primary pl-6 cursor-pointer" routerLink="/">Serichai Web Portal</a>
       </div>
       <div class="flex gap-2">
+        <a class="btn btn-ghost" routerLink="/about">About</a>
         <div class="dropdown dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar" aria-label="Account menu">
             <div class="w-10 rounded-full bg-gray-200"></div>

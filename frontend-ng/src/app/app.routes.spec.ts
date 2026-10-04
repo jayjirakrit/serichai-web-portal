@@ -1,9 +1,13 @@
 import { Location } from '@angular/common';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '@/app.routes';
+import { API_BASE_URL } from '@core/config/api-config';
 import { Navbar } from '@shared/ui/navbar';
+import { About } from '@features/about/about';
 
 describe('app routes', () => {
   beforeEach(() => {
@@ -25,6 +29,21 @@ describe('app routes', () => {
     await h.navigateByUrl('/login');
     expect(h.routeNativeElement?.querySelector('#username')).not.toBeNull();
     expect(h.routeNativeElement?.querySelector('app-button')?.textContent).toContain('Sign in');
+  });
+
+  it('resolves /about to About', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://api' },
+      ],
+    });
+    const h = await RouterTestingHarness.create();
+    const page = await h.navigateByUrl('/about', About);
+    expect(page).toBeInstanceOf(About);
+    expect(TestBed.inject(Location).path()).toBe('/about');
+    TestBed.inject(HttpTestingController).expectOne('http://api/system/info');
   });
 
   it('unknown path lands on Home', async () => {

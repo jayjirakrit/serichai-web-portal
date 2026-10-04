@@ -18,6 +18,7 @@ describe('Layout', () => {
     expect(el.querySelector('app-navbar')).not.toBeNull();
     expect(el.querySelector('main .page')?.textContent).toBe('hi');
     expect(el.querySelector('a[href="/"]')).not.toBeNull();
+    expect(el.querySelector('a[href="/about"]')?.textContent?.trim()).toBe('About');
     expect(el.querySelector('a button, button a')).toBeNull();
   });
 });

@@ -30,5 +30,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('@features/elderly-tax-deduction/elderly-tax-deduction').then((m) => m.ElderlyTaxDeduction),
   },
+  {
+    path: 'about',
+    loadComponent: () => import('@features/about/about').then((m) => m.About),
+  },
   { path: '**', redirectTo: '' },
 ];
