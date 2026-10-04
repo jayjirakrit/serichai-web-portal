@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "MOCK TEST FEATURE: System info "About" page. Add a backend endpoint GET /system/info that returns the app name, app version, server time (ISO 8601), and a status of "ok". Add an Angular "About" page at route /about, linked from the navbar, that calls this endpoint and shows the values in a card, with loading and error states. Keep it minimal — no auth, no persistence."
 
