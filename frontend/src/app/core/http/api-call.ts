@@ -5,7 +5,7 @@ import { Observable, Subscription } from 'rxjs';
 export type ApiCallStatus = 'idle' | 'pending' | 'error' | 'success';
 
 /**
- * Signal-based mutation helper (replaces TanStack `useMutation`).
+ * Signal-based mutation helper for HTTP calls.
  * Must be called in an injection context (field initializer / constructor);
  * the in-flight request is cancelled when the owning component is destroyed.
  */
