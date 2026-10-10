@@ -6,15 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Serichai Web Portal — an internal tool for Serichai and Ch.Paisarn. Monorepo with two independently run apps that talk over HTTP:
 
-- `frontend-ng/` — Angular 22 + TypeScript SPA (the main frontend; spec 007 task T017 renames it to `frontend/`)
-- `frontend/` — legacy React 19 + Vite SPA, frozen and to be deleted at the same cutover
+- `frontend/` — Angular 22 + TypeScript SPA
 - `backend/` — FastAPI (Python) service
 
 There is no shared build, no monorepo tooling (Nx/Turborepo/workspaces), and no shared package between the two — they are just two sibling projects in one repo. Always `cd` into the relevant subfolder before running its tooling.
 
 ## Commands
 
-### Frontend (`frontend-ng/`)
+### Frontend (`frontend/`)
 
 ```
 npm ci            # install deps (Node >= 24.15)
@@ -23,8 +22,6 @@ npm run build     # ng build (strict type-check) -> dist/serichai-web-portal/bro
 npm run lint      # ng lint
 npm test          # ng test (Vitest); add -- --watch=false for a single run
 ```
-
-The legacy React app in `frontend/` still uses `npm run dev` / `npm run build` / `npm run lint` until the cutover deletes it — don't add features there.
 
 ### Backend (`backend/`)
 
@@ -47,11 +44,11 @@ cp .env.example .env   # first time only; defaults work out of the box
 docker compose up      # serves the whole portal on http://localhost:8080 (or $PORT)
 ```
 
-This builds `backend/Dockerfile` and the frontend `Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend with a 20 MB upload limit — see `nginx.conf` next to it). Until the spec 007 cutover the compose file still builds the React app from `./frontend`; the Angular equivalents already live in `frontend-ng/`. The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
+This builds `backend/Dockerfile` and the frontend `Dockerfile` (a Node build stage → nginx serving the SPA and reverse-proxying `/accounts/*` to the backend with a 20 MB upload limit — see `nginx.conf` next to it). The backend's Excel templates are bind-mounted read-only from `HOST_DATA_DIR` (`.env`, defaults to `./backend/data`) rather than baked into the image, so they can be updated without a rebuild. This is a separate workflow from `npm run dev` / `uvicorn --reload` above, not a replacement for it — use those for day-to-day local development.
 
 ### Windows native install (`scripts/windows/`)
 
-For a Windows machine that should run the portal permanently without Docker: `setup.ps1` (winget installs Python/Node, venv + `pip install`, `npm ci` + build, registers a boot-time Scheduled Task), `open-firewall.ps1` (LAN access), `set-static-ip.ps1` (optional). The task runs `uvicorn` on `0.0.0.0:8080` with `FRONTEND_DIST` set, so `backend/main.py` serves the built Angular bundle (SPA fallback) plus `/accounts/*` from one origin — the same shape as the nginx gateway. `FRONTEND_DIST` is unset in dev and Docker, so this path is inactive there. See `scripts/windows/README.md`.
+For a Windows machine that should run the portal permanently without Docker: `setup.ps1` (winget installs Python/Node, venv + `pip install`, `npm ci` + build, registers a boot-time Scheduled Task), `open-firewall.ps1` (LAN access), `set-static-ip.ps1` (optional). The task runs nginx on `0.0.0.0:8080` (serving the built Angular bundle from `frontend/dist` with SPA fallback and reverse-proxying `/accounts/*` and `/health` to `uvicorn` on loopback `127.0.0.1:8000`) — the same shape as the Docker gateway. `backend/main.py` can also serve the bundle itself when `FRONTEND_DIST` is set, but the Windows scripts do not use that path; it is unset in dev and Docker. After pulling a change that moves the frontend, re-run `setup.ps1` (idempotent). See `scripts/windows/README.md`.
 
 ### Devcontainer (`.devcontainer/`)
 
@@ -80,7 +77,7 @@ Note: `services/accounts_service.py` currently reads its Excel input from a hard
 
 ### Frontend: core/shared/features structure
 
-Angular app in `frontend-ng/src/app/` (standalone components, zoneless, TypeScript `strict` + `strictTemplates`):
+Angular app in `frontend/src/app/` (standalone components, zoneless, TypeScript `strict` + `strictTemplates`):
 
 - `core/` — app-wide singletons: `core/http/api-call.ts` (the `apiCall` helper), `core/config/api-config.ts` (`API_BASE_URL` token), `core/auth/` (Login placeholder).
 - `shared/` — reusable UI (`shared/ui/`: `layout`, `navbar`, `button`, `card`, `result-panel`, `file-field`), `shared/models/`, `shared/utils/`.
@@ -107,6 +104,21 @@ Follow this decision order rather than reaching for a global store by default:
 
 `/speckit-plan` also writes `specs/<feature>/design.md` (from `.specify/templates/design-template.md`): a review aid (~250-400 lines) showing the key implementation files as short key-path snippets (feature service/models/component/template, backend router/service/models, shared blocks, algorithms, decision-carrying config) plus approach, decisions, flow, risks and open questions, for the architect to review at the plan gate, before `/speckit-tasks`. It is the only spec artifact allowed to contain implementation code; engineers treat it as guidance and report any deviation.
 
+## Spec-Kit orchestrators
+
+Two project skills wrap the individual `speckit-*` skills (they add sequencing and gates, no logic of their own):
+
+- `/speckit-elaboration <description>` — specify → clarify → (checklist) → **gate: review spec** → plan → **gate: review plan + design.md** → tasks → analyze. Writes only Markdown under `specs/<feature>/`; run with no args to resume the active feature.
+- `/speckit-execution` — implement ⇄ converge (max 3 passes) → quality-engineer once (per-area lanes started as each area finishes, then an integration merge; re-checks run in delta mode) ∥ `/code-review` → **gate: human review** → offers `[ADD]`/`[IMP]` commits per the conventions below (only on confirmation).
+
+Run `/compact` between the two.
+
+## Session hygiene (context management)
+
+- Run `/clear` between unrelated features or tasks; don't carry one feature's context into the next.
+- In a long session, run `/compact <focus>` at phase boundaries — after `/speckit-plan`, after each `/speckit-implement` batch, after a long debugging detour — naming what to keep, e.g. `/compact keep feature 007 dir, done task IDs, open questions`.
+- Spec-Kit artifacts on disk (`spec.md`, `plan.md`, `design.md`, `tasks.md` checkboxes, `quality-report.md`) are the durable memory, so compaction loses nothing that matters. A `SessionStart` hook (`.claude/hooks/compact-context.mjs`) re-points Claude at the active feature from `.specify/feature.json` after every compaction.
+
 ## Git commit conventions
 
 - Do **not** add a `Co-Authored-By: Claude` (or any Anthropic/Claude attribution) trailer to commit messages in this repository. Commits should be authored under the user's own identity only.
@@ -123,5 +135,5 @@ Follow this decision order rather than reaching for a global store by default:
 
 ## Cross-cutting notes
 
-- Frontend and backend are developed and run as two separate processes (`npm start` + `uvicorn`); the Angular dev server proxies `/accounts/*` to `http://127.0.0.1:8000` via `frontend-ng/proxy.conf.json`, so service calls use relative URLs (`API_BASE_URL` is `''`). In containers/Windows install, nginx or `backend/main.py` serves the built SPA and `/accounts/*` from one origin.
+- Frontend and backend are developed and run as two separate processes (`npm start` + `uvicorn`); the Angular dev server proxies `/accounts/*` to `http://127.0.0.1:8000` via `frontend/proxy.conf.json`, so service calls use relative URLs (`API_BASE_URL` is `''`). In Docker and the Windows install, nginx serves the built SPA and `/accounts/*` from one origin.
 - Employee benefit data (`backend/data/Employee_Benefit_Template.xlsx`) uses Thai-language column headers and Buddhist Era (BE) year conventions (BE = Gregorian year + 543) — preserve this convention when touching `accounts_service.py` or related date/year logic.
