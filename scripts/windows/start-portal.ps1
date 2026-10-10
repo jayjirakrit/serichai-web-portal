@@ -15,7 +15,7 @@ $BackendPort = Get-BackendPort
 
 $backend = Join-Path $RepoRoot 'backend'
 $python  = Join-Path $backend '.venv\Scripts\python.exe'
-$dist    = Join-Path $RepoRoot 'frontend-ng\dist\serichai-web-portal\browser'
+$dist    = Join-Path $RepoRoot 'frontend\dist\serichai-web-portal\browser'
 if (-not (Test-Path $python)) { throw "Missing $python - run setup.ps1 first." }
 if (-not (Test-Path $dist))   { throw "Missing $dist - run setup.ps1 first." }
 if (-not (Test-Path $NginxExe)) { throw "Missing $NginxExe - run setup.ps1 first." }
