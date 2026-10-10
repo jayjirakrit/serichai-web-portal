@@ -18,7 +18,7 @@ $script:NginxVersion = '1.28.0'
 $script:NginxDir     = Join-Path $PSScriptRoot 'nginx'
 $script:NginxExe     = Join-Path $script:NginxDir 'nginx.exe'
 $script:NginxConf    = Join-Path $script:NginxDir 'conf\portal.conf'
-$script:DistDir      = Join-Path $script:RepoRoot 'frontend-ng\dist\serichai-web-portal\browser'
+$script:DistDir      = Join-Path $script:RepoRoot 'frontend\dist\serichai-web-portal\browser'
 
 function Get-PortalConfig {
     $cfg = @{ port = 8080; backendPort = 8000 }

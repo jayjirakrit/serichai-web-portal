@@ -4,7 +4,7 @@
 .DESCRIPTION
   1. Installs Python 3.13 and Node.js LTS via winget (if missing)
   2. Creates backend\.venv and installs requirements.txt
-  3. npm ci + builds the Angular app (frontend-ng)
+  3. npm ci + builds the Angular app (frontend)
   4. Downloads nginx (official Windows zip) into scripts\windows\nginx
   5. Registers Scheduled Task 'SerichaiWebPortal' (runs as SYSTEM at startup, no login needed)
   6. Starts it and waits for /health (through nginx)
@@ -105,7 +105,7 @@ if (-not $venvOk) {
 Invoke-Checked 'pip install' { & $venvPy -m pip install --disable-pip-version-check -r (Join-Path $backend 'requirements.txt') }
 
 # --- 3. Frontend ---------------------------------------------------------
-$frontend = Join-Path $RepoRoot 'frontend-ng'
+$frontend = Join-Path $RepoRoot 'frontend'
 $dist = Join-Path $frontend 'dist\serichai-web-portal\browser'
 if (-not $SkipBuild) {
     Write-Host "`n[3/5] Building Angular frontend" -ForegroundColor Cyan
