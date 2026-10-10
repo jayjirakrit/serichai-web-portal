@@ -106,10 +106,10 @@ Follow this decision order rather than reaching for a global store by default:
 
 ## Spec-Kit orchestrators
 
-Two project skills wrap the individual `speckit-*` skills (they add sequencing and gates, no logic of their own):
+Two skills from the `jy-sdd` plugin (config in `.sdd.config.json`) wrap the individual `speckit-*` skills (they add sequencing and gates, no logic of their own):
 
-- `/speckit-elaboration <description>` — specify → clarify → (checklist) → **gate: review spec** → plan → **gate: review plan + design.md** → tasks → analyze. Writes only Markdown under `specs/<feature>/`; run with no args to resume the active feature.
-- `/speckit-execution` — implement ⇄ converge (max 3 passes) → quality-engineer once (per-area lanes started as each area finishes, then an integration merge; re-checks run in delta mode) ∥ `/code-review` → **gate: human review** → offers `[ADD]`/`[IMP]` commits per the conventions below (only on confirmation).
+- `/jy-sdd:elaboration <description>` — specify → clarify → (checklist) → **gate: review spec** → plan → **gate: review plan + design.md** → tasks → analyze. Writes only Markdown under `specs/<feature>/`; run with no args to resume the active feature.
+- `/jy-sdd:execution` — implement ⇄ converge (max 3 passes) → quality-engineer once (per-area lanes started as each area finishes, then an integration merge; re-checks run in delta mode) ∥ `/code-review` → **gate: human review** → offers `[ADD]`/`[IMP]` commits per the conventions below (only on confirmation).
 
 Run `/compact` between the two.
 
@@ -117,7 +117,7 @@ Run `/compact` between the two.
 
 - Run `/clear` between unrelated features or tasks; don't carry one feature's context into the next.
 - In a long session, run `/compact <focus>` at phase boundaries — after `/speckit-plan`, after each `/speckit-implement` batch, after a long debugging detour — naming what to keep, e.g. `/compact keep feature 007 dir, done task IDs, open questions`.
-- Spec-Kit artifacts on disk (`spec.md`, `plan.md`, `design.md`, `tasks.md` checkboxes, `quality-report.md`) are the durable memory, so compaction loses nothing that matters. A `SessionStart` hook (`.claude/hooks/compact-context.mjs`) re-points Claude at the active feature from `.specify/feature.json` after every compaction.
+- Spec-Kit artifacts on disk (`spec.md`, `plan.md`, `design.md`, `tasks.md` checkboxes, `quality-report.md`) are the durable memory, so compaction loses nothing that matters. The `jy-sdd` plugin's `SessionStart` hook re-points Claude at the active feature from `.specify/feature.json` after every compaction.
 
 ## Git commit conventions
 

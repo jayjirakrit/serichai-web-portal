@@ -1,0 +1,23 @@
+{
+  "profile": "fastapi-angular",
+  "frameworkVersion": "0.1.0",
+  "requireContracts": true,
+  "commitTags": ["ADD", "IMP", "DOCS"],
+  "protected": [
+    { "glob": "backend/data/*.xls*", "reason": "Excel template bind-mounted into deployments (HOST_DATA_DIR). Ask the user to change it by hand." }
+  ],
+  "areas": [
+    { "id": "backend", "root": "backend/", "role": "backend", "tag": "BE", "gates": ["pytest"] },
+    {
+      "id": "frontend", "root": "frontend/", "role": "frontend", "tag": "FE",
+      "verify": "browser walkthrough",
+      "gates": ["npm run lint", "npm run build", "npm test -- --watch=false"],
+      "lint": {
+        "match": "src/**/*.{ts,html}",
+        "cwd": ".",
+        "requires": "node_modules/eslint/bin/eslint.js",
+        "command": ["node", "node_modules/eslint/bin/eslint.js", "--fix", "--cache", "--cache-location", "node_modules/.cache/eslint/", "{file}"]
+      }
+    }
+  ]
+}

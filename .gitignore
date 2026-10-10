@@ -1,7 +1,6 @@
-# SPECKIT
-.claude
-.specify 
-
+# Claude Code / Spec-Kit — local tooling, not tracked
+.claude/
+.specify/
 # Logs
 logs
 *.log
