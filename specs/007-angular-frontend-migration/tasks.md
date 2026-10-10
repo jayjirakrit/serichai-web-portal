@@ -82,8 +82,8 @@ Each task: `<feature>.models.ts` (camelCase types from `data-model.md`), `<featu
 **Independent Test**: `grep -ril "react\|vite\|tanstack" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=specs .` returns nothing beyond exempt files (quickstart.md "Cutover check").
 
 - [ ] T016 [US5] Parity gate: run quickstart.md "Manual parity check" and "Containerised check" (T014) against `sample-data/`; record any deviations and resolve before cutover.
-- [ ] T017 [US5] Cutover: delete `frontend/`, `git mv frontend-ng frontend`; confirm `docker-compose.yml`, devcontainer and lint/test/build still pass from `frontend/`; remove leftover React/Vite artefacts (`tailwind.config.js`, `hero.png`, `react.svg`, `vite.svg`, `App.css`).
-- [ ] T018 [US5] Docs: update `CLAUDE.md` (commands, Node 24, `core/shared/features` architecture, state-management section -> signals + `HttpClient` + `apiCall`, Tailwind via `.postcssrc.json`, dev proxy replaces CORS/no-proxy notes, Docker output path; keep the commit-convention section as is), `README.md`, `frontend/README.md`, `.claude/agents/frontend-engineer.md` (Angular rules), `.claude/agents/solution-architect.md` (Principle III wording).
+- [ ] T017 [US5] Cutover: delete `frontend/`, `git mv frontend-ng frontend`; confirm `docker-compose.yml`, devcontainer and lint/test/build still pass from `frontend/`; remove leftover React/Vite artefacts (`tailwind.config.js`, `hero.png`, `react.svg`, `vite.svg`, `App.css`). **Superseded by 008-react-to-angular-cutover.**
+- [ ] T018 [US5] Docs: update `CLAUDE.md` (commands, Node 24, `core/shared/features` architecture, state-management section -> signals + `HttpClient` + `apiCall`, Tailwind via `.postcssrc.json`, dev proxy replaces CORS/no-proxy notes, Docker output path; keep the commit-convention section as is), `README.md`, `frontend/README.md`, `.claude/agents/frontend-engineer.md` (Angular rules), `.claude/agents/solution-architect.md` (Principle III wording). **Superseded by 008-react-to-angular-cutover.**
 
 ---
 
